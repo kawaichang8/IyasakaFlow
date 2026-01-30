@@ -1,0 +1,629 @@
+// ==============================================
+// CRM App - Prisma Schema
+// BtoB特化の顧客管理データモデル
+// ==============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================================
+// ユーザー・認証関連（NextAuth.js対応）
+// ==============================================
+
+/// ユーザー
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  password      String?   // Credentials認証用（ハッシュ化）
+  image         String?
+  role          UserRole  @default(MEMBER)
+  
+  // チーム関連
+  teamId        String?
+  team          Team?     @relation(fields: [teamId], references: [id])
+  
+  // NextAuth.js関連
+  accounts      AuthAccount[]
+  sessions      Session[]
+  
+  // 所有するレコード
+  ownedAccounts Account[] @relation("AccountOwner")
+  ownedContacts Contact[] @relation("ContactOwner")
+  ownedDeals    Deal[]    @relation("DealOwner")
+  
+  // 割り当てられたタスク
+  assignedTasks Task[]    @relation("TaskAssignee")
+  createdTasks  Task[]    @relation("TaskCreator")
+  
+  // インタラクション
+  interactions  Interaction[] @relation("InteractionCreator")
+  
+  // メール関連
+  emails        Email[]        @relation("EmailCreator")
+  emailTemplates EmailTemplate[] @relation("TemplateCreator")
+  
+  // キャンペーン
+  campaigns     Campaign[]     @relation("CampaignCreator")
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+/// NextAuth.js OAuth アカウント
+model AuthAccount {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("auth_accounts")
+}
+
+/// NextAuth.js セッション
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+/// NextAuth.js メール認証トークン
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+/// ユーザーロール（RBAC）
+enum UserRole {
+  ADMIN     // 管理者
+  MANAGER   // マネージャー
+  MEMBER    // メンバー
+  VIEWER    // 閲覧者
+}
+
+/// チーム
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  members     User[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("teams")
+}
+
+// ==============================================
+// 顧客管理（Account & Contact）
+// ==============================================
+
+/// 企業アカウント（BtoB特化）
+model Account {
+  id              String        @id @default(cuid())
+  name            String
+  industry        String?
+  website         String?
+  phone           String?
+  email           String?
+  
+  // 住所
+  address         String?
+  city            String?
+  state           String?
+  postalCode      String?
+  country         String?       @default("日本")
+  
+  // 企業規模
+  employeeCount   Int?
+  annualRevenue   BigInt?       // 年間売上（円）
+  
+  // ステータス
+  status          AccountStatus @default(PROSPECT)
+  
+  // 説明・メモ
+  description     String?
+  
+  // タグ（JSON配列として保存）
+  tags            String[]      @default([])
+  
+  // カスタムフィールド（JSON）
+  customFields    Json?         @default("{}")
+  
+  // 所有者
+  ownerId         String?
+  owner           User?         @relation("AccountOwner", fields: [ownerId], references: [id])
+  
+  // 親アカウント（グループ企業用）
+  parentAccountId String?
+  parentAccount   Account?      @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  childAccounts   Account[]     @relation("AccountHierarchy")
+  
+  // リレーション
+  contacts        Contact[]
+  deals           Deal[]
+  interactions    Interaction[]
+  tasks           Task[]
+  emails          Email[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([name])
+  @@index([industry])
+  @@index([status])
+  @@index([ownerId])
+  @@map("accounts")
+}
+
+/// アカウントステータス
+enum AccountStatus {
+  PROSPECT    // 見込み客
+  ACTIVE      // アクティブ
+  INACTIVE    // 非アクティブ
+  CHURNED     // 離脱
+}
+
+/// 連絡先（担当者）
+model Contact {
+  id              String          @id @default(cuid())
+  
+  // 基本情報
+  name            String
+  firstName       String?
+  lastName        String?
+  email           String?
+  phone           String?
+  mobile          String?
+  
+  // 役職・部署
+  role            String?
+  department      String?
+  
+  // 所属企業
+  accountId       String
+  account         Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // 影響力レベル（BtoB特化）
+  influenceLevel  InfluenceLevel  @default(OTHER)
+  
+  // ステータス
+  status          ContactStatus   @default(ACTIVE)
+  
+  // タグ
+  tags            String[]        @default([])
+  
+  // メモ
+  notes           String?
+  
+  // SNSプロファイル（JSON）
+  socialProfiles  Json?           @default("{}")
+  
+  // カスタムフィールド
+  customFields    Json?           @default("{}")
+  
+  // 所有者
+  ownerId         String?
+  owner           User?           @relation("ContactOwner", fields: [ownerId], references: [id])
+  
+  // 最終連絡日
+  lastContactDate DateTime?
+  
+  // リレーション
+  deals           Deal[]
+  interactions    Interaction[]
+  tasks           Task[]
+  emails          Email[]
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([name])
+  @@index([email])
+  @@index([accountId])
+  @@index([influenceLevel])
+  @@index([ownerId])
+  @@map("contacts")
+}
+
+/// 影響力レベル（BtoB意思決定プロセス）
+enum InfluenceLevel {
+  DECISION_MAKER  // 意思決定者
+  INFLUENCER      // 影響者
+  USER            // ユーザー
+  GATEKEEPER      // ゲートキーパー
+  OTHER           // その他
+}
+
+/// 連絡先ステータス
+enum ContactStatus {
+  ACTIVE    // アクティブ
+  INACTIVE  // 非アクティブ
+  BOUNCED   // メール不達
+}
+
+// ==============================================
+// 取引・パイプライン管理
+// ==============================================
+
+/// 取引（案件）
+model Deal {
+  id                String      @id @default(cuid())
+  name              String
+  
+  // 金額
+  value             BigInt      @default(0)
+  currency          String      @default("JPY")
+  
+  // パイプラインステージ
+  stage             DealStage   @default(LEAD)
+  probability       Int         @default(0)  // 成約確率（%）
+  
+  // 期日
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  
+  // 説明
+  description       String?
+  
+  // タグ
+  tags              String[]    @default([])
+  
+  // 関連先
+  accountId         String
+  account           Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  contactId         String?
+  contact           Contact?    @relation(fields: [contactId], references: [id])
+  
+  // 所有者
+  ownerId           String?
+  owner             User?       @relation("DealOwner", fields: [ownerId], references: [id])
+  
+  // リレーション
+  interactions      Interaction[]
+  tasks             Task[]
+  emails            Email[]
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([stage])
+  @@index([accountId])
+  @@index([ownerId])
+  @@index([expectedCloseDate])
+  @@map("deals")
+}
+
+/// 取引ステージ
+enum DealStage {
+  LEAD          // リード
+  QUALIFIED     // 見込み評価済み
+  PROPOSAL      // 提案
+  NEGOTIATION   // 交渉
+  CLOSED_WON    // 成約
+  CLOSED_LOST   // 失注
+}
+
+// ==============================================
+// インタラクション（活動履歴）
+// ==============================================
+
+/// インタラクション
+model Interaction {
+  id              String          @id @default(cuid())
+  
+  type            InteractionType
+  subject         String?
+  note            String?
+  
+  // 日時・期間
+  date            DateTime        @default(now())
+  duration        Int?            // 分単位
+  
+  // 結果
+  outcome         String?
+  
+  // 次のアクション
+  nextAction      String?
+  nextActionDate  DateTime?
+  
+  // 関連先
+  accountId       String?
+  account         Account?        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  contactId       String?
+  contact         Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  
+  dealId          String?
+  deal            Deal?           @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  
+  // 作成者
+  createdById     String
+  createdBy       User            @relation("InteractionCreator", fields: [createdById], references: [id])
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([type])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([dealId])
+  @@index([date])
+  @@map("interactions")
+}
+
+/// インタラクションタイプ
+enum InteractionType {
+  CALL      // 電話
+  EMAIL     // メール
+  MEETING   // ミーティング
+  NOTE      // メモ
+  TASK      // タスク
+}
+
+// ==============================================
+// タスク管理
+// ==============================================
+
+/// タスク
+model Task {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  
+  // 期限
+  dueDate       DateTime?
+  
+  // 優先度・ステータス
+  priority      TaskPriority @default(MEDIUM)
+  status        TaskStatus   @default(PENDING)
+  
+  // 関連先
+  accountId     String?
+  account       Account?     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  contactId     String?
+  contact       Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  
+  dealId        String?
+  deal          Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  
+  // 担当者・作成者
+  assigneeId    String?
+  assignee      User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  
+  createdById   String
+  createdBy     User         @relation("TaskCreator", fields: [createdById], references: [id])
+  
+  completedAt   DateTime?
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([assigneeId])
+  @@index([accountId])
+  @@map("tasks")
+}
+
+/// タスク優先度
+enum TaskPriority {
+  LOW       // 低
+  MEDIUM    // 中
+  HIGH      // 高
+  URGENT    // 緊急
+}
+
+/// タスクステータス
+enum TaskStatus {
+  PENDING      // 未着手
+  IN_PROGRESS  // 進行中
+  COMPLETED    // 完了
+  CANCELLED    // キャンセル
+}
+
+// ==============================================
+// メール連携
+// ==============================================
+
+/// メール送信履歴
+model Email {
+  id              String        @id @default(cuid())
+  
+  // メール内容
+  subject         String
+  body            String        @db.Text
+  bodyHtml        String?       @db.Text  // HTML版
+  
+  // 送信先
+  toAddresses     String[]      // 宛先（複数可）
+  ccAddresses     String[]      @default([])
+  bccAddresses    String[]      @default([])
+  
+  // 送信元
+  fromAddress     String
+  fromName        String?
+  replyTo         String?
+  
+  // ステータス
+  status          EmailStatus   @default(DRAFT)
+  sentAt          DateTime?
+  scheduledAt     DateTime?     // 予約送信
+  
+  // 追跡情報
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  bouncedAt       DateTime?
+  bounceReason    String?
+  
+  // テンプレート
+  templateId      String?
+  template        EmailTemplate? @relation(fields: [templateId], references: [id])
+  
+  // 関連先
+  accountId       String?
+  account         Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  
+  contactId       String?
+  contact         Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  
+  dealId          String?
+  deal            Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  
+  // 送信者
+  createdById     String
+  createdBy       User          @relation("EmailCreator", fields: [createdById], references: [id])
+  
+  // メタデータ
+  metadata        Json?         @default("{}")
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([dealId])
+  @@index([createdById])
+  @@index([sentAt])
+  @@map("emails")
+}
+
+/// メールステータス
+enum EmailStatus {
+  DRAFT       // 下書き
+  SCHEDULED   // 予約済み
+  SENDING     // 送信中
+  SENT        // 送信済み
+  DELIVERED   // 配信済み
+  OPENED      // 開封済み
+  CLICKED     // クリック済み
+  BOUNCED     // バウンス
+  FAILED      // 失敗
+}
+
+/// メールテンプレート
+model EmailTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  subject       String
+  body          String   @db.Text
+  bodyHtml      String?  @db.Text
+  
+  // カテゴリ・タグ
+  category      String?
+  tags          String[] @default([])
+  
+  // 変数（テンプレート内で使用可能な変数）
+  variables     String[] @default([])  // 例: ["{{name}}", "{{company}}"]
+  
+  // メタ情報
+  isActive      Boolean  @default(true)
+  isDefault     Boolean  @default(false)
+  
+  // 作成者
+  createdById   String
+  createdBy     User     @relation("TemplateCreator", fields: [createdById], references: [id])
+  
+  // 利用履歴
+  emails        Email[]
+  campaigns     Campaign[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@map("email_templates")
+}
+
+// ==============================================
+// キャンペーン（MA連携）
+// ==============================================
+
+/// キャンペーン
+model Campaign {
+  id              String          @id @default(cuid())
+  name            String
+  description     String?         @db.Text
+  
+  // 種別・ステータス
+  type            CampaignType    @default(EMAIL)
+  status          CampaignStatus  @default(DRAFT)
+  
+  // 期間
+  startDate       DateTime?
+  endDate         DateTime?
+  
+  // ターゲット（JSON: accountIds, contactIds, filters 等）
+  targetSegment   Json?           @default("{}")
+  
+  // メールテンプレート（メールキャンペーン時）
+  templateId      String?
+  template        EmailTemplate?  @relation(fields: [templateId], references: [id])
+  
+  // タグ
+  tags            String[]        @default([])
+  
+  // 作成者
+  createdById     String
+  createdBy       User            @relation("CampaignCreator", fields: [createdById], references: [id])
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@index([createdById])
+  @@index([startDate])
+  @@map("campaigns")
+}
+
+/// キャンペーン種別
+enum CampaignType {
+  EMAIL     // メール
+  EVENT     // イベント
+  LANDING   // ランディング
+  OTHER     // その他
+}
+
+/// キャンペーンステータス
+enum CampaignStatus {
+  DRAFT      // 下書き
+  SCHEDULED  // 予約済み
+  RUNNING    // 実行中
+  COMPLETED  // 完了
+  CANCELLED  // キャンセル
+}
