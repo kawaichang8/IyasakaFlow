@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X, Send, Save, FileText, Plus } from 'lucide-react';
+import { X, Send, Save, FileText, Plus, Code, Type, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -28,6 +29,25 @@ import { useSendEmail, useSaveDraft, useEmailTemplates } from '@/hooks/use-email
 import { useAccounts } from '@/hooks/use-accounts';
 import { useContacts } from '@/hooks/use-contacts';
 import { toast } from 'sonner';
+
+/**
+ * カンマ区切りの文字列をメールアドレス配列に変換
+ */
+function parseEmailAddresses(input: string): string[] {
+  return input
+    .split(/[,;]/)
+    .map((email) => email.trim())
+    .filter((email) => email.length > 0);
+}
+
+/**
+ * メールアドレス配列を検証
+ */
+function validateEmailAddresses(emails: string[]): { valid: boolean; invalid: string[] } {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const invalid = emails.filter((email) => !emailRegex.test(email));
+  return { valid: invalid.length === 0, invalid };
+}
 
 interface EmailComposeProps {
   open: boolean;
@@ -52,6 +72,9 @@ export function EmailCompose({
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [useHtmlMode, setUseHtmlMode] = useState(false);
+  const [bodyHtml, setBodyHtml] = useState<string>('');
+  const [toError, setToError] = useState<string | null>(null);
 
   const sendMutation = useSendEmail();
   const saveDraftMutation = useSaveDraft();
@@ -84,13 +107,18 @@ export function EmailCompose({
 
   const watchAccountId = watch('accountId');
 
-  // テンプレート選択時に内容を適用
+  // テンプレート選択時に内容を適用（bodyHtml も含む）
   useEffect(() => {
     if (selectedTemplate) {
       const template = templates.find((t) => t.id === selectedTemplate);
       if (template) {
         setValue('subject', template.subject);
         setValue('body', template.body);
+        // テンプレートに bodyHtml があれば HTML モードを有効化
+        if (template.bodyHtml) {
+          setBodyHtml(template.bodyHtml);
+          setUseHtmlMode(true);
+        }
       }
     }
   }, [selectedTemplate, templates, setValue]);
@@ -102,13 +130,49 @@ export function EmailCompose({
       setSelectedTemplate('');
       setShowCc(false);
       setShowBcc(false);
+      setUseHtmlMode(false);
+      setBodyHtml('');
+      setToError(null);
     }
   }, [open, reset]);
 
   const onSubmit = async (data: SendEmailFormData) => {
     try {
-      await sendMutation.mutateAsync(data);
-      toast.success('メールを送信しました');
+      setToError(null);
+
+      // 宛先をカンマ区切りから配列に変換
+      const toStr = typeof data.to === 'string' ? data.to : (data.to as string[]).join(',');
+      const toAddresses = parseEmailAddresses(toStr);
+
+      if (toAddresses.length === 0) {
+        setToError('宛先を入力してください');
+        return;
+      }
+
+      // メールアドレスの形式を検証
+      const { valid, invalid } = validateEmailAddresses(toAddresses);
+      if (!valid) {
+        setToError(`無効なメールアドレス: ${invalid.join(', ')}`);
+        return;
+      }
+
+      // CC/BCC も同様に配列に変換
+      const ccStr = typeof data.cc === 'string' ? data.cc : (data.cc as string[] | undefined)?.join(',');
+      const ccAddresses = ccStr ? parseEmailAddresses(ccStr) : undefined;
+      const bccStr = typeof data.bcc === 'string' ? data.bcc : (data.bcc as string[] | undefined)?.join(',');
+      const bccAddresses = bccStr ? parseEmailAddresses(bccStr) : undefined;
+
+      // 送信データを構築（bodyHtml を含む）
+      const sendData: SendEmailFormData = {
+        ...data,
+        to: toAddresses,
+        cc: ccAddresses,
+        bcc: bccAddresses,
+        bodyHtml: useHtmlMode && bodyHtml ? bodyHtml : undefined,
+      };
+
+      await sendMutation.mutateAsync(sendData);
+      toast.success(`${toAddresses.length}件のメールを送信しました`);
       onClose();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'メール送信に失敗しました');
@@ -118,12 +182,21 @@ export function EmailCompose({
   const handleSaveDraft = async () => {
     const data = watch();
     try {
+      // カンマ区切りを配列に変換
+      const toStr = typeof data.to === 'string' ? data.to : (data.to as string[])?.join(',') || '';
+      const toAddresses = parseEmailAddresses(toStr);
+      const ccStr = typeof data.cc === 'string' ? data.cc : (data.cc as string[] | undefined)?.join(',');
+      const ccAddresses = ccStr ? parseEmailAddresses(ccStr) : [];
+      const bccStr = typeof data.bcc === 'string' ? data.bcc : (data.bcc as string[] | undefined)?.join(',');
+      const bccAddresses = bccStr ? parseEmailAddresses(bccStr) : [];
+
       await saveDraftMutation.mutateAsync({
         subject: data.subject,
         body: data.body,
-        toAddresses: data.to ? (Array.isArray(data.to) ? data.to : [data.to]) : [],
-        ccAddresses: data.cc ? (Array.isArray(data.cc) ? data.cc : [data.cc]) : [],
-        bccAddresses: data.bcc ? (Array.isArray(data.bcc) ? data.bcc : [data.bcc]) : [],
+        bodyHtml: useHtmlMode && bodyHtml ? bodyHtml : undefined,
+        toAddresses,
+        ccAddresses,
+        bccAddresses,
         accountId: data.accountId,
         contactId: data.contactId,
         dealId: data.dealId,
@@ -225,10 +298,16 @@ export function EmailCompose({
             </div>
           </div>
 
-          {/* 宛先 */}
+          {/* 宛先（カンマ区切りで複数入力可能） */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="to">宛先 *</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="to">宛先 *</Label>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  カンマ区切りで複数入力可
+                </span>
+              </div>
               <div className="flex gap-2">
                 {!showCc && (
                   <Button
@@ -256,20 +335,23 @@ export function EmailCompose({
             </div>
             <Input
               id="to"
-              type="email"
-              placeholder="example@email.com"
+              type="text"
+              placeholder="user1@example.com, user2@example.com"
               {...register('to')}
             />
-            {errors.to && (
-              <p className="text-sm text-destructive">{errors.to.message}</p>
+            {(errors.to || toError) && (
+              <p className="text-sm text-destructive">{toError || errors.to?.message}</p>
             )}
           </div>
 
-          {/* CC */}
+          {/* CC（カンマ区切りで複数入力可能） */}
           {showCc && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="cc">CC</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="cc">CC</Label>
+                  <span className="text-xs text-muted-foreground">カンマ区切りで複数入力可</span>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -285,18 +367,21 @@ export function EmailCompose({
               </div>
               <Input
                 id="cc"
-                type="email"
-                placeholder="cc@email.com"
+                type="text"
+                placeholder="cc1@email.com, cc2@email.com"
                 {...register('cc')}
               />
             </div>
           )}
 
-          {/* BCC */}
+          {/* BCC（カンマ区切りで複数入力可能） */}
           {showBcc && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="bcc">BCC</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="bcc">BCC</Label>
+                  <span className="text-xs text-muted-foreground">カンマ区切りで複数入力可</span>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -312,8 +397,8 @@ export function EmailCompose({
               </div>
               <Input
                 id="bcc"
-                type="email"
-                placeholder="bcc@email.com"
+                type="text"
+                placeholder="bcc1@email.com, bcc2@email.com"
                 {...register('bcc')}
               />
             </div>
@@ -334,17 +419,56 @@ export function EmailCompose({
 
           {/* 本文 */}
           <div className="space-y-2">
-            <Label htmlFor="body">本文 *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="body">本文 *</Label>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {useHtmlMode ? <Code className="h-3 w-3" /> : <Type className="h-3 w-3" />}
+                  {useHtmlMode ? 'HTML' : 'テキスト'}
+                </span>
+                <Switch
+                  checked={useHtmlMode}
+                  onCheckedChange={setUseHtmlMode}
+                  aria-label="HTMLモード切り替え"
+                />
+              </div>
+            </div>
             <Textarea
               id="body"
               placeholder="メール本文を入力..."
-              rows={10}
+              rows={useHtmlMode ? 6 : 10}
               {...register('body')}
             />
             {errors.body && (
               <p className="text-sm text-destructive">{errors.body.message}</p>
             )}
           </div>
+
+          {/* HTML本文（HTMLモード時のみ表示） */}
+          {useHtmlMode && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="bodyHtml">
+                  <Code className="mr-1 inline h-4 w-4" />
+                  HTML本文
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  HTMLタグを使用してリッチなメールを作成できます
+                </span>
+              </div>
+              <Textarea
+                id="bodyHtml"
+                placeholder="<html><body><h1>件名</h1><p>本文...</p></body></html>"
+                rows={8}
+                value={bodyHtml}
+                onChange={(e) => setBodyHtml(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                ※ テキスト本文はHTML非対応メーラー用のフォールバックとして使用されます
+              </p>
+            </div>
+          )}
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
