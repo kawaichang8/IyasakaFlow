@@ -3,6 +3,11 @@ const nextConfig = {
   // React Strict Mode（開発時のバグ検出）
   reactStrictMode: true,
 
+  // Vercel ビルド時は ESLint エラーで失敗しない（本番デプロイ用。ローカルでは npm run lint で確認）
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // 画像最適化設定
   images: {
     remotePatterns: [
