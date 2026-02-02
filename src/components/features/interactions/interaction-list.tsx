@@ -130,10 +130,11 @@ function groupByDate(interactions: Interaction[]): Record<string, Interaction[]>
       label = formatDate(date, { year: 'numeric', month: 'long' });
     }
 
-    if (!groups[label]) {
-      groups[label] = [];
+    const key = label ?? '日付なし';
+    if (!groups[key]) {
+      groups[key] = [];
     }
-    groups[label].push(interaction);
+    groups[key].push(interaction);
   });
 
   return groups;

@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  CheckCircle2, 
-  Circle,
+import {
+  CheckCircle2,
   MoreHorizontal,
   Calendar,
   Building2,
@@ -21,8 +19,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { formatDate, formatRelativeTime } from '@/lib/utils';
-import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/validations/task';
+import { formatDate } from '@/lib/utils';
+import { TASK_PRIORITIES } from '@/lib/validations/task';
 
 interface Task {
   id: string;
@@ -185,7 +183,6 @@ interface TaskItemProps {
 
 function TaskItem({ task, onStatusChange, onDelete }: TaskItemProps) {
   const priorityConfig = TASK_PRIORITIES.find((p) => p.value === task.priority);
-  const statusConfig = TASK_STATUSES.find((s) => s.value === task.status);
   const isCompleted = task.status === 'completed';
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
 

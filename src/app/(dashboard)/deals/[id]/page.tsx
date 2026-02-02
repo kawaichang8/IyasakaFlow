@@ -8,11 +8,11 @@ interface DealDetailPageProps {
   };
 }
 
-export async function generateMetadata({ 
-  params 
+export async function generateMetadata({
+  params: _params,
 }: DealDetailPageProps): Promise<Metadata> {
   return {
-    title: `案件詳細 | CRM App`,
+    title: `案件詳細 | Iyasaka Flow`,
     description: '案件の詳細情報',
   };
 }

@@ -1,12 +1,13 @@
 {
   "name": "crm-app",
   "version": "0.1.0",
-  "description": "BtoB特化の営業・顧客管理CRMアプリケーション",
+  "description": "Iyasaka Flow - BtoB特化のCRM + MA統合アプリケーション",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "preview": "npm run build && npm run start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",

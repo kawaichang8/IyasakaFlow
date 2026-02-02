@@ -1,14 +1,13 @@
 'use client';
 
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   TrendingDown,
-  DollarSign, 
-  Building2, 
+  DollarSign,
+  Building2,
   Target,
   CheckSquare,
   AlertTriangle,
-  Clock,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatCompactNumber } from '@/lib/utils';

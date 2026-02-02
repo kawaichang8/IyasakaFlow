@@ -1,13 +1,14 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Building2 } from 'lucide-react';
 import { LoginForm } from '@/components/features/auth/login-form';
 import { OAuthButtons } from '@/components/features/auth/oauth-buttons';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = {
-  title: 'ログイン | CRM App',
-  description: 'CRM Appにログイン',
+  title: 'ログイン | Iyasaka Flow',
+  description: 'Iyasaka Flowにログイン',
 };
 
 /**
@@ -21,7 +22,7 @@ export default function LoginPage() {
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <Building2 className="h-6 w-6" />
         </div>
-        <CardTitle className="text-2xl font-bold">CRM Appにログイン</CardTitle>
+        <CardTitle className="text-2xl font-bold">Iyasaka Flowにログイン</CardTitle>
         <CardDescription>
           アカウント情報を入力してください
         </CardDescription>
@@ -43,8 +44,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* メール/パスワードフォーム */}
-        <LoginForm />
+        {/* メール/パスワードフォーム（useSearchParams 利用のため Suspense でラップ） */}
+        <Suspense fallback={<div className="flex justify-center py-4"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+          <LoginForm />
+        </Suspense>
       </CardContent>
 
       <CardFooter className="flex flex-col space-y-2">

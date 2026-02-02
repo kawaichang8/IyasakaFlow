@@ -54,7 +54,7 @@ class NodemailerProvider implements EmailProvider {
   async send(options: EmailOptions): Promise<EmailResult> {
     try {
       const fromEmail = options.from?.email || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
-      const fromName = options.from?.name || process.env.SMTP_FROM_NAME || 'CRM App';
+      const fromName = options.from?.name || process.env.SMTP_FROM_NAME || 'Iyasaka Flow';
 
       const result = await this.transporter.sendMail({
         from: `"${fromName}" <${fromEmail}>`,
@@ -94,7 +94,7 @@ class ResendProvider implements EmailProvider {
   async send(options: EmailOptions): Promise<EmailResult> {
     try {
       const fromEmail = options.from?.email || process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-      const fromName = options.from?.name || process.env.RESEND_FROM_NAME || 'CRM App';
+      const fromName = options.from?.name || process.env.RESEND_FROM_NAME || 'Iyasaka Flow';
 
       const result = await this.resend.emails.send({
         from: `${fromName} <${fromEmail}>`,
@@ -174,8 +174,9 @@ class EmailService {
     const variables: string[] = [];
     let match;
     while ((match = regex.exec(template)) !== null) {
-      if (!variables.includes(match[1])) {
-        variables.push(match[1]);
+      const name = match[1];
+      if (name && !variables.includes(name)) {
+        variables.push(name);
       }
     }
     return variables;

@@ -86,9 +86,17 @@ export async function POST(request: NextRequest) {
 
     const results = { created: 0, skipped: 0, errors: [] as { row: number; message: string }[] };
 
+    const accountStatusMap: Record<string, 'PROSPECT' | 'ACTIVE' | 'INACTIVE' | 'CHURNED'> = {
+      prospect: 'PROSPECT',
+      active: 'ACTIVE',
+      inactive: 'INACTIVE',
+      churned: 'CHURNED',
+    };
+
     if (type === 'accounts') {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
+        if (!row) continue;
         const name = toStr(row.name ?? row['会社名']);
         if (!name) {
           results.errors.push({ row: i + 1, message: '会社名がありません' });
@@ -116,8 +124,21 @@ export async function POST(request: NextRequest) {
           accountSchema.parse(data);
           await prisma.account.create({
             data: {
-              ...data,
-              annualRevenue: data.annualRevenue != null ? BigInt(data.annualRevenue) : null,
+              name: data.name,
+              industry: data.industry,
+              website: data.website,
+              phone: data.phone,
+              email: data.email,
+              address: data.address,
+              city: data.city,
+              state: data.state,
+              postalCode: data.postalCode,
+              country: data.country,
+              employeeCount: data.employeeCount,
+              annualRevenue: data.annualRevenue !== null && data.annualRevenue !== undefined ? BigInt(data.annualRevenue) : null,
+              status: accountStatusMap[data.status] ?? 'PROSPECT',
+              description: data.description,
+              tags: data.tags,
             },
           });
           results.created++;
@@ -131,6 +152,7 @@ export async function POST(request: NextRequest) {
     if (type === 'contacts') {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
+        if (!row) continue;
         const accountName = toStr(row.accountName ?? row['企業名']);
         const name = toStr(row.name ?? row['名前']);
         if (!accountName || !name) {
@@ -183,6 +205,7 @@ export async function POST(request: NextRequest) {
     if (type === 'deals') {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
+        if (!row) continue;
         const accountName = toStr(row.accountName ?? row['企業名']);
         const name = toStr(row.name ?? row['案件名']);
         if (!accountName || !name) {

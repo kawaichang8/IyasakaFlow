@@ -4,7 +4,15 @@ import { useState } from 'react';
 import { Plus, Zap, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
-import { FilterBar, type FilterOption } from '@/components/ui/filter-bar';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { CAMPAIGN_TYPES, CAMPAIGN_STATUSES } from '@/lib/validations/campaign';
 
 interface CampaignStats {
@@ -42,21 +50,6 @@ export function CampaignHeader({
   onCreateClick,
 }: CampaignHeaderProps) {
   const [showFilters, setShowFilters] = useState(false);
-
-  const typeOptions: FilterOption[] = [
-    { value: '', label: 'すべての種別' },
-    ...CAMPAIGN_TYPES.map((t) => ({ value: t.value, label: t.label })),
-  ];
-
-  const statusOptions: FilterOption[] = [
-    { value: '', label: 'すべてのステータス' },
-    ...CAMPAIGN_STATUSES.map((s) => ({ value: s.value, label: s.label })),
-  ];
-
-  const filters = [
-    { key: 'type', label: '種別', value: type, options: typeOptions },
-    { key: 'status', label: 'ステータス', value: status, options: statusOptions },
-  ];
 
   return (
     <div className="space-y-4">
@@ -114,10 +107,51 @@ export function CampaignHeader({
 
       {showFilters && (
         <FilterBar
-          filters={filters}
-          onChange={onFilterChange}
+          activeCount={activeFilterCount}
           onClear={onClearFilters}
-        />
+          defaultOpen
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>種別</Label>
+              <Select
+                value={type || 'all'}
+                onValueChange={(v) => onFilterChange('type', v === 'all' ? undefined : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="すべての種別" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべての種別</SelectItem>
+                  {CAMPAIGN_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>ステータス</Label>
+              <Select
+                value={status || 'all'}
+                onValueChange={(v) => onFilterChange('status', v === 'all' ? undefined : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="すべてのステータス" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべてのステータス</SelectItem>
+                  {CAMPAIGN_STATUSES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </FilterBar>
       )}
     </div>
   );

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma, checkDbConnection } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/health
  * ヘルスチェックエンドポイント

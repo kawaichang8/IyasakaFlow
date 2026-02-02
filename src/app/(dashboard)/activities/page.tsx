@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 import { InteractionHeader } from '@/components/features/interactions/interaction-header';
 import { InteractionList } from '@/components/features/interactions/interaction-list';
 import { useInteractions, useDeleteInteraction } from '@/hooks/use-interactions';
@@ -8,11 +8,18 @@ import { useSearchParamsState } from '@/hooks/use-search-params';
 
 type ActivityFilters = { search?: string; type?: string };
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * 活動履歴ページ
- * 検索・フィルターはURL連携
+ * 活動履歴ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function ActivitiesPage() {
+function ActivitiesPageContent() {
   const { get, setOne, clear } = useSearchParamsState<ActivityFilters>();
 
   const params = useMemo<ActivityFilters>(() => ({
@@ -92,5 +99,17 @@ export default function ActivitiesPage() {
         isLoading={isLoading}
       />
     </div>
+  );
+}
+
+/**
+ * 活動履歴ページ
+ * 検索・フィルターはURL連携
+ */
+export default function ActivitiesPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <ActivitiesPageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { ContactHeader } from '@/components/features/contacts/contact-header';
 import { ContactList } from '@/components/features/contacts/contact-list';
 import { useSearchParamsState } from '@/hooks/use-search-params';
@@ -15,11 +15,18 @@ type ContactFilters = {
   sortOrder?: string;
 };
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * 連絡先一覧ページ
- * URL検索パラメータとフィルターを連携
+ * 連絡先一覧ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function ContactsPage() {
+function ContactsPageContent() {
   const { get, getNumber, setOne, clear } = useSearchParamsState<ContactFilters>();
 
   const params = useMemo<ContactFilters>(() => ({
@@ -47,5 +54,17 @@ export default function ContactsPage() {
       />
       <ContactList params={params} />
     </div>
+  );
+}
+
+/**
+ * 連絡先一覧ページ
+ * URL検索パラメータとフィルターを連携
+ */
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <ContactsPageContent />
+    </Suspense>
   );
 }

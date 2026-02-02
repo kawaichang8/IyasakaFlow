@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 import { taskSchema } from '@/lib/validations/task';
 import { Prisma } from '@prisma/client';
 
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
         contactId: validatedData.contactId || null,
         dealId: validatedData.dealId || null,
         assigneeId: validatedData.assigneeId || null,
-        createdById: validatedData.assigneeId || null, // 仮で作成者=担当者
+        createdById: validatedData.assigneeId ?? (await requireAuth()).id,
       },
       include: {
         account: {
@@ -193,15 +194,16 @@ export async function POST(request: NextRequest) {
       },
     });
     
-    // レスポンス用に整形
+    // レスポンス用に整形（include で取得したリレーション）
+    const withRelations = newTask as typeof newTask & { account?: { id: string; name: string } | null; assignee?: { id: string; name: string } | null };
     const responseData = {
       id: newTask.id,
       title: newTask.title,
       priority: newTask.priority.toLowerCase(),
       status: newTask.status.toLowerCase(),
-      dueDate: newTask.dueDate?.toISOString() || null,
-      account: newTask.account,
-      assignee: newTask.assignee,
+      dueDate: newTask.dueDate?.toISOString() ?? null,
+      account: withRelations.account ?? null,
+      assignee: withRelations.assignee ?? null,
       createdAt: newTask.createdAt.toISOString(),
     };
     

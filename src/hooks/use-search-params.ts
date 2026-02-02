@@ -8,7 +8,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
  * 一覧ページの検索・フィルター・ソートをURLと同期
  */
 export function useSearchParamsState<T extends Record<string, string | number | boolean | undefined>>(
-  defaults: Partial<T> = {}
+  _defaults: Partial<T> = {}
 ) {
   const router = useRouter();
   const pathname = usePathname();

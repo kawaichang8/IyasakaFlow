@@ -20,7 +20,7 @@ import {
 
 /**
  * サイドバーナビゲーション
- * CRMの主要機能へのアクセスを提供
+ * Iyasaka Flowの主要機能へのアクセスを提供
  */
 
 interface NavItem {
@@ -111,7 +111,7 @@ export function Sidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Building2 className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold">CRM App</span>
+          <span className="text-lg font-bold">Iyasaka Flow</span>
         </Link>
       </div>
 

@@ -1,5 +1,5 @@
 /**
- * CRM App 型定義
+ * Iyasaka Flow 型定義
  * BtoB向け顧客管理に特化した型定義
  */
 

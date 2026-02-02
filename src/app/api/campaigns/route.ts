@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     const validatedData = campaignSchema.parse(body);
 
     const targetSegment =
-      validatedData.targetSegment != null
+      validatedData.targetSegment !== null && validatedData.targetSegment !== undefined
         ? (validatedData.targetSegment as object)
         : {};
 

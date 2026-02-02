@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatCurrency } from '@/lib/utils';
 import { useAccounts } from '@/hooks/use-accounts';
-import type { Account } from '@/types';
+import type { Account, QueryParams } from '@/types';
 
 interface AccountWithCounts extends Account {
   contactCount?: number;
@@ -40,7 +40,7 @@ interface AccountListProps {
  * テーブル/カード表示、検索・フィルターはURL連携
  */
 export function AccountList({ params }: AccountListProps) {
-  const { data, isLoading, error } = useAccounts(params);
+  const { data, isLoading, error } = useAccounts(params as QueryParams | undefined);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const accounts = (data?.data ?? []) as AccountWithCounts[];
 

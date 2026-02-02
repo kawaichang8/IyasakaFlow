@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { requireAuth } from '@/lib/auth';
 import { interactionSchema } from '@/lib/validations/interaction';
 import { Prisma } from '@prisma/client';
 
@@ -175,10 +176,10 @@ export async function POST(request: NextRequest) {
         date: new Date(validatedData.date),
         duration: validatedData.duration || null,
         outcome: validatedData.outcome || null,
-        accountId: validatedData.accountId || null,
-        contactId: validatedData.contactId || null,
-        dealId: validatedData.dealId || null,
-        createdById: null, // TODO: 認証ユーザーから取得
+        accountId: validatedData.accountId || undefined,
+        contactId: validatedData.contactId || undefined,
+        dealId: validatedData.dealId || undefined,
+        createdById: (await requireAuth()).id,
       },
       include: {
         account: {
@@ -202,16 +203,17 @@ export async function POST(request: NextRequest) {
       },
     });
     
-    // レスポンス用に整形
+    // レスポンス用に整形（include で取得したリレーション）
+    const withRelations = newInteraction as typeof newInteraction & { account?: { id: string; name: string } | null; contact?: { id: string; name: string } | null; deal?: { id: string; name: string } | null };
     const responseData = {
       id: newInteraction.id,
       type: newInteraction.type.toLowerCase(),
       subject: newInteraction.subject,
       note: newInteraction.note,
       date: newInteraction.date.toISOString(),
-      account: newInteraction.account,
-      contact: newInteraction.contact,
-      deal: newInteraction.deal,
+      account: withRelations.account ?? null,
+      contact: withRelations.contact ?? null,
+      deal: withRelations.deal ?? null,
       createdAt: newInteraction.createdAt.toISOString(),
     };
     

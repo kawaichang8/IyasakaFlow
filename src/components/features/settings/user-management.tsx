@@ -48,20 +48,6 @@ import {
 } from '@/lib/validations/team';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/use-teams';
 
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  image: string | null;
-  team?: { id: string; name: string } | null;
-  stats: {
-    accounts: number;
-    contacts: number;
-    deals: number;
-  };
-}
-
 interface Team {
   id: string;
   name: string;
@@ -72,7 +58,6 @@ interface Team {
  */
 export function UserManagement() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
 
   const { data, isLoading, refetch } = useUsers();
@@ -134,14 +119,6 @@ export function UserManagement() {
     }
   };
 
-  const handleUpdateTeam = async (userId: string, teamId: string) => {
-    try {
-      await updateMutation.mutateAsync({ id: userId, data: { teamId: teamId || null } });
-      refetch();
-    } catch (error) {
-      console.error('Failed to update user:', error);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('このユーザーを削除してもよろしいですか？')) return;

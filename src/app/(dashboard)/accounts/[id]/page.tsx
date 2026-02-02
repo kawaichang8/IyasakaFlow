@@ -8,12 +8,12 @@ interface AccountDetailPageProps {
   };
 }
 
-export async function generateMetadata({ 
-  params 
+export async function generateMetadata({
+  params: _params,
 }: AccountDetailPageProps): Promise<Metadata> {
   // TODO: 実際のアカウント名を取得
   return {
-    title: `企業詳細 | CRM App`,
+    title: `企業詳細 | Iyasaka Flow`,
     description: '企業アカウントの詳細情報',
   };
 }

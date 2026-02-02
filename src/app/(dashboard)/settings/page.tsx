@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Settings, 
@@ -18,10 +18,18 @@ import { isAdmin, isManagerOrAbove } from '@/lib/auth/permissions';
 
 type SettingsTab = 'general' | 'teams' | 'users' | 'permissions' | 'data';
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * 設定ページ
+ * 設定ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { user } = useCurrentUser();
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as SettingsTab | null;
@@ -112,6 +120,17 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * 設定ページ
+ */
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }
 

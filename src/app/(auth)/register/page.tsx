@@ -6,8 +6,8 @@ import { OAuthButtons } from '@/components/features/auth/oauth-buttons';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = {
-  title: '新規登録 | CRM App',
-  description: 'CRM Appに新規登録',
+  title: '新規登録 | Iyasaka Flow',
+  description: 'Iyasaka Flowに新規登録',
 };
 
 /**

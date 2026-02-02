@@ -64,8 +64,9 @@ export function RevenueChart({ data }: RevenueChartProps) {
               />
               <Tooltip
                 content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload as MonthlyData;
+                  const first = payload?.[0];
+                  if (active && first) {
+                    const data = first.payload as MonthlyData;
                     const monthIndex = parseInt(label) - 1;
                     const isFuture = monthIndex > currentMonth;
                     

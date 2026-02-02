@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  User, 
-  Building2, 
-  Mail, 
-  Phone, 
+import {
+  Building2,
+  Mail,
+  Phone,
   Calendar,
   Edit,
   Plus,

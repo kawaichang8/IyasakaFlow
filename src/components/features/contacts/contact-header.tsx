@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { Plus, Download, Upload, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,10 +58,20 @@ export function ContactHeader({
   onClearFilters,
   activeFilterCount,
 }: ContactHeaderProps) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchValue);
   const { data: accountsData } = useAccounts({ limit: 100 });
   const accounts = accountsData?.data ?? [];
+
+  useEffect(() => {
+    if (searchParams.get('openCreate') === '1') {
+      setIsCreateDialogOpen(true);
+      router.replace(pathname);
+    }
+  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     setLocalSearch(searchValue);

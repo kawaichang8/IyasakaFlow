@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatRelativeTime } from '@/lib/utils';
 import { useContacts } from '@/hooks/use-contacts';
-import type { Contact } from '@/types';
+import type { Contact, QueryParams } from '@/types';
 
 interface ContactListProps {
   params?: { search?: string; accountId?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
@@ -33,7 +33,7 @@ interface ContactListProps {
  * 検索・フィルターはURL連携
  */
 export function ContactList({ params }: ContactListProps) {
-  const { data, isLoading, error } = useContacts(params);
+  const { data, isLoading, error } = useContacts(params as QueryParams | undefined);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const contacts = data?.data ?? [];
 

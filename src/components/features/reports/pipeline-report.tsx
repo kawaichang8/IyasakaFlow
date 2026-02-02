@@ -86,8 +86,9 @@ export function PipelineReport({ data }: PipelineReportProps) {
                 />
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as StageData;
+                    const first = payload?.[0];
+                    if (active && first) {
+                      const data = first.payload as StageData;
                       return (
                         <div className="rounded-lg border bg-background p-3 shadow-lg">
                           <p className="font-medium">{data.stage}</p>
@@ -144,8 +145,9 @@ export function PipelineReport({ data }: PipelineReportProps) {
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
+                    const first = payload?.[0];
+                    if (active && first) {
+                      const data = first.payload;
                       const percentage = totalValue > 0 
                         ? ((data.value / totalValue) * 100).toFixed(1)
                         : 0;
@@ -171,7 +173,7 @@ export function PipelineReport({ data }: PipelineReportProps) {
               <div key={stage.stageKey} className="flex items-center gap-2">
                 <div 
                   className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: COLORS[stage.stageKey as keyof typeof COLORS] || '#94a3b8' }}
+                  style={{ backgroundColor: (stage.stageKey && COLORS[stage.stageKey as keyof typeof COLORS]) || '#94a3b8' }}
                 />
                 <span className="text-sm">{stage.stage}</span>
                 <span className="text-sm text-muted-foreground">({stage.count})</span>
@@ -191,7 +193,7 @@ export function PipelineReport({ data }: PipelineReportProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activeStages.map((stage, index) => {
+            {activeStages.map((stage, _index) => {
               const widthPercentage = totalValue > 0 
                 ? Math.max((stage.value / totalValue) * 100, 10) 
                 : 25;

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import {
   FileText,
-  Plus,
   MoreHorizontal,
   Trash2,
   Edit,
@@ -28,7 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { TemplateForm } from './template-form';
 import { TEMPLATE_CATEGORIES } from '@/lib/validations/email';
 import { formatRelativeTime } from '@/lib/utils';
 

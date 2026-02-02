@@ -4,7 +4,15 @@ import { useState } from 'react';
 import { Plus, Mail, FileText, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
-import { FilterBar, type FilterOption } from '@/components/ui/filter-bar';
+import { FilterBar } from '@/components/ui/filter-bar';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { EMAIL_STATUSES } from '@/lib/validations/email';
 
 interface EmailStats {
@@ -42,20 +50,6 @@ export function EmailHeader({
   onTemplatesClick,
 }: EmailHeaderProps) {
   const [showFilters, setShowFilters] = useState(false);
-
-  const statusOptions: FilterOption[] = [
-    { value: '', label: 'すべてのステータス' },
-    ...EMAIL_STATUSES.map((s) => ({ value: s.value, label: s.label })),
-  ];
-
-  const filters = [
-    {
-      key: 'status',
-      label: 'ステータス',
-      value: status,
-      options: statusOptions,
-    },
-  ];
 
   return (
     <div className="space-y-4">
@@ -143,10 +137,30 @@ export function EmailHeader({
       {/* フィルターバー */}
       {showFilters && (
         <FilterBar
-          filters={filters}
-          onChange={onFilterChange}
+          activeCount={activeFilterCount}
           onClear={onClearFilters}
-        />
+          defaultOpen
+        >
+          <div className="space-y-2">
+            <Label>ステータス</Label>
+            <Select
+              value={status || 'all'}
+              onValueChange={(v) => onFilterChange('status', v === 'all' ? undefined : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="すべてのステータス" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">すべてのステータス</SelectItem>
+                {EMAIL_STATUSES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </FilterBar>
       )}
     </div>
   );

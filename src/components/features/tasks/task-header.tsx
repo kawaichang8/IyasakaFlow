@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { Plus, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,8 +58,18 @@ export function TaskHeader({
   onClearFilters, 
   activeFilterCount = 0 
 }: TaskHeaderProps) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchValue);
+
+  useEffect(() => {
+    if (searchParams.get('openCreate') === '1') {
+      setIsCreateDialogOpen(true);
+      router.replace(pathname);
+    }
+  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     setLocalSearch(searchValue);

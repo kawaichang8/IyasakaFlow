@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * 認証ページ用レイアウト
  * シンプルな中央寄せレイアウト

@@ -6,7 +6,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Building2, User, TrendingUp, Search, Loader2 } from 'lucide-react';

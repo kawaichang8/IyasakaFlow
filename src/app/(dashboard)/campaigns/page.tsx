@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { Suspense, useState, useCallback, useMemo, useEffect } from 'react';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { CampaignHeader, CampaignList, CampaignForm } from '@/components/features/campaigns';
 import { useCampaigns, useDeleteCampaign } from '@/hooks/use-campaigns';
 import { useSearchParamsState } from '@/hooks/use-search-params';
@@ -14,12 +15,30 @@ import { toast } from 'sonner';
 
 type CampaignFilters = { search?: string; type?: string; status?: string };
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * キャンペーン一覧ページ
+ * キャンペーン一覧ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function CampaignsPage() {
+function CampaignsPageContent() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const { get, setOne, clear } = useSearchParamsState<CampaignFilters>();
   const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('openCreate') === '1') {
+      setShowForm(true);
+      router.replace(pathname);
+    }
+  }, [searchParams, pathname, router]);
 
   const params = useMemo<CampaignFilters>(
     () => ({
@@ -128,5 +147,16 @@ export default function CampaignsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * キャンペーン一覧ページ
+ */
+export default function CampaignsPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <CampaignsPageContent />
+    </Suspense>
   );
 }

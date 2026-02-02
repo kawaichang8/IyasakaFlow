@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { Bell, Search, User, Menu, Plus, LogOut, Settings } from 'lucide-react';
+import { Bell, Search, User, Menu, Plus, LogOut, Settings, Building2, Users, TrendingUp, CheckSquare, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -83,7 +84,7 @@ export function Header() {
 
 /**
  * クイック追加メニュー
- * 新規作成のショートカット
+ * 新規作成のショートカット（該当ページへ遷移し作成ダイアログを開く）
  */
 function QuickAddMenu() {
   return (
@@ -97,12 +98,37 @@ function QuickAddMenu() {
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>新規作成</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>企業アカウント</DropdownMenuItem>
-        <DropdownMenuItem>連絡先</DropdownMenuItem>
-        <DropdownMenuItem>案件</DropdownMenuItem>
-        <DropdownMenuItem>タスク</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/accounts?openCreate=1" className="flex items-center">
+            <Building2 className="mr-2 h-4 w-4" />
+            企業アカウント
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/contacts?openCreate=1" className="flex items-center">
+            <Users className="mr-2 h-4 w-4" />
+            連絡先
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/deals?openCreate=1" className="flex items-center">
+            <TrendingUp className="mr-2 h-4 w-4" />
+            案件
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/tasks?openCreate=1" className="flex items-center">
+            <CheckSquare className="mr-2 h-4 w-4" />
+            タスク
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>キャンペーン</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/campaigns?openCreate=1" className="flex items-center">
+            <Zap className="mr-2 h-4 w-4" />
+            キャンペーン
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

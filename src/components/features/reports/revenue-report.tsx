@@ -164,8 +164,9 @@ export function RevenueReport({ revenue, pipeline, dailyTrend }: RevenueReportPr
                   />
                   <Tooltip
                     content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload as DailyData;
+                      const first = payload?.[0];
+                      if (active && first) {
+                        const data = first.payload as DailyData;
                         return (
                           <div className="rounded-lg border bg-background p-3 shadow-lg">
                             <p className="font-medium">{label}</p>

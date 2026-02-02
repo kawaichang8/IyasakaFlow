@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { Suspense, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { DealHeader } from '@/components/features/deals/deal-header';
 import { PipelineBoard } from '@/components/features/deals/pipeline-board';
@@ -10,11 +10,18 @@ import { useSearchParamsState } from '@/hooks/use-search-params';
 
 type DealFilters = { search?: string; stage?: string; accountId?: string };
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * 取引（パイプライン）一覧ページ
- * Kanbanボードまたはリスト表示、検索・フィルターはURL連携
+ * 取引（パイプライン）一覧ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function DealsPage() {
+function DealsPageContent() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const { get, setOne, clear } = useSearchParamsState<DealFilters>();
@@ -119,5 +126,17 @@ export default function DealsPage() {
         <DealList deals={deals} />
       )}
     </div>
+  );
+}
+
+/**
+ * 取引（パイプライン）一覧ページ
+ * Kanbanボードまたはリスト表示、検索・フィルターはURL連携
+ */
+export default function DealsPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <DealsPageContent />
+    </Suspense>
   );
 }

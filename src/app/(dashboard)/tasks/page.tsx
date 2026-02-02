@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 import { TaskHeader } from '@/components/features/tasks/task-header';
 import { TaskList } from '@/components/features/tasks/task-list';
 import { useTasks, useUpdateTaskStatus, useDeleteTask } from '@/hooks/use-tasks';
@@ -8,11 +8,18 @@ import { useSearchParamsState } from '@/hooks/use-search-params';
 
 type TaskFilters = { search?: string; status?: string; priority?: string };
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * タスク一覧ページ
- * 検索・フィルターはURL連携
+ * タスク一覧ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function TasksPage() {
+function TasksPageContent() {
   const { get, setOne, clear } = useSearchParamsState<TaskFilters>();
 
   const params = useMemo<TaskFilters>(() => ({
@@ -114,5 +121,17 @@ export default function TasksPage() {
         isLoading={isLoading}
       />
     </div>
+  );
+}
+
+/**
+ * タスク一覧ページ
+ * 検索・フィルターはURL連携
+ */
+export default function TasksPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <TasksPageContent />
+    </Suspense>
   );
 }

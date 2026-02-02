@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { stringifyCsv, EXPORT_COLUMNS } from '@/lib/import-export/csv';
-import { Prisma } from '@prisma/client';
+
+export const dynamic = 'force-dynamic';
 
 const MAX_EXPORT = 10000;
 
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
         postalCode: a.postalCode ?? '',
         country: a.country ?? '',
         employeeCount: a.employeeCount ?? '',
-        annualRevenue: a.annualRevenue != null ? String(a.annualRevenue) : '',
+        annualRevenue: a.annualRevenue !== null && a.annualRevenue !== undefined ? String(a.annualRevenue) : '',
         status: a.status.toLowerCase(),
         description: a.description ?? '',
         tags: Array.isArray(a.tags) ? a.tags.join(';') : '',

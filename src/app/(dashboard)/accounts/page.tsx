@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { AccountHeader } from '@/components/features/accounts/account-header';
 import { AccountList } from '@/components/features/accounts/account-list';
 import { useSearchParamsState } from '@/hooks/use-search-params';
@@ -15,12 +15,19 @@ type AccountFilters = {
   sortOrder?: string;
 };
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * 企業アカウント一覧ページ
- * URL検索パラメータとフィルターを連携
+ * 企業アカウント一覧ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function AccountsPage() {
-  const { get, getNumber, set, setOne, clear, toObject } = useSearchParamsState<AccountFilters>();
+function AccountsPageContent() {
+  const { get, getNumber, setOne, clear } = useSearchParamsState<AccountFilters>();
 
   const params = useMemo<AccountFilters>(() => ({
     search: get('search'),
@@ -47,5 +54,17 @@ export default function AccountsPage() {
       />
       <AccountList params={params} />
     </div>
+  );
+}
+
+/**
+ * 企業アカウント一覧ページ
+ * URL検索パラメータとフィルターを連携
+ */
+export default function AccountsPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <AccountsPageContent />
+    </Suspense>
   );
 }

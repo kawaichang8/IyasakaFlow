@@ -1,6 +1,8 @@
 import { Sidebar } from '@/components/layouts/sidebar';
 import { Header } from '@/components/layouts/header';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * ダッシュボードレイアウト
  * サイドバーとヘッダーを含むメインレイアウト

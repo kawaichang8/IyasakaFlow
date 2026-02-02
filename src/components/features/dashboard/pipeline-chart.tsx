@@ -60,8 +60,9 @@ export function PipelineChart({ data }: PipelineChartProps) {
               />
               <Tooltip
                 content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload as PipelineData;
+                  const first = payload?.[0];
+                  if (active && first) {
+                    const data = first.payload as PipelineData;
                     return (
                       <div className="rounded-lg border bg-background p-3 shadow-lg">
                         <p className="font-medium">{label}</p>

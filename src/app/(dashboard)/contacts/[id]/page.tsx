@@ -8,11 +8,11 @@ interface ContactDetailPageProps {
   };
 }
 
-export async function generateMetadata({ 
-  params 
+export async function generateMetadata({
+  params: _params,
 }: ContactDetailPageProps): Promise<Metadata> {
   return {
-    title: `連絡先詳細 | CRM App`,
+    title: `連絡先詳細 | Iyasaka Flow`,
     description: '連絡先の詳細情報',
   };
 }

@@ -141,7 +141,7 @@ export function PipelineBoard({ deals, onStageChange, onDealClick }: PipelineBoa
             ))}
 
             {/* 空のステージ表示 */}
-            {(!dealsByStage[stage.value] || dealsByStage[stage.value].length === 0) && (
+            {(!(stage.value && dealsByStage[stage.value]) || (dealsByStage[stage.value]?.length ?? 0) === 0) && (
               <div className="flex h-24 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
                 案件をドロップ
               </div>
@@ -164,7 +164,7 @@ interface DealCardProps {
   onClick?: () => void;
 }
 
-function DealCard({ deal, isDragging, onDragStart, onDragEnd, onClick }: DealCardProps) {
+function DealCard({ deal, isDragging, onDragStart, onDragEnd, onClick: _onClick }: DealCardProps) {
   return (
     <Card
       draggable

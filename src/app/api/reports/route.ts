@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/reports
  * レポート用の統計データを取得
@@ -196,7 +198,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           name: true,
-          deals: {
+          ownedDeals: {
             where: {
               stage: 'CLOSED_WON',
               actualCloseDate: { gte: periodStart, lte: periodEnd },
@@ -277,13 +279,16 @@ export async function GET(request: NextRequest) {
 
     // ユーザー別ランキング
     const leaderboard = userPerformance
-      .map((u) => ({
-        id: u.id,
-        name: u.name,
-        revenue: u.deals.reduce((sum, d) => sum + Number(d.value), 0),
-        dealCount: u.deals.length,
-        activityCount: u.interactions.length,
-      }))
+      .map((u) => {
+        const user = u as typeof u & { ownedDeals: { value: bigint }[]; interactions: { id: string }[] };
+        return {
+          id: u.id,
+          name: u.name,
+          revenue: user.ownedDeals.reduce((sum: number, d: { value: bigint }) => sum + Number(d.value), 0),
+          dealCount: user.ownedDeals.length,
+          activityCount: user.interactions.length,
+        };
+      })
       .filter((u) => u.revenue > 0 || u.activityCount > 0)
       .sort((a, b) => b.revenue - a.revenue);
 
@@ -292,6 +297,7 @@ export async function GET(request: NextRequest) {
     dailyDeals.forEach((deal) => {
       if (deal.actualCloseDate) {
         const dateKey = deal.actualCloseDate.toISOString().split('T')[0];
+        if (dateKey === undefined) return;
         if (!dailyData[dateKey]) {
           dailyData[dateKey] = { date: dateKey, value: 0, count: 0 };
         }

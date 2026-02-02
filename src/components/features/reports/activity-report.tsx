@@ -167,8 +167,9 @@ export function ActivityReport({ activity, acquisition, activityByType, leaderbo
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip
                         content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload as ActivityType;
+                          const first = payload?.[0];
+                          if (active && first) {
+                            const data = first.payload as ActivityType;
                             return (
                               <div className="rounded-lg border bg-background p-3 shadow-lg">
                                 <p className="font-medium">{data.type}</p>

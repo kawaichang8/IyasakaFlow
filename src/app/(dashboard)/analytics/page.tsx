@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { useReports } from '@/hooks/use-reports';
 import { formatCurrency, formatCompactNumber } from '@/lib/utils';
-import { BarChart3, TrendingUp, Users, Target, Activity } from 'lucide-react';
+import { TrendingUp, Users, Target, Activity } from 'lucide-react';
 
 const STAGE_LABELS: Record<string, string> = {
   lead: 'リード',
@@ -54,7 +54,7 @@ const CHART_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#e
  */
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState('month');
-  const { data, isLoading, error, refetch } = useReports(period);
+  const { data, isLoading, error } = useReports(period);
   const reportData = data?.data;
 
   if (error) {

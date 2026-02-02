@@ -60,9 +60,9 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
         _count: {
           select: {
-            accounts: true,
-            contacts: true,
-            deals: true,
+            ownedAccounts: true,
+            ownedContacts: true,
+            ownedDeals: true,
           },
         },
       },
@@ -82,9 +82,9 @@ export async function GET(request: NextRequest) {
       emailVerified: user.emailVerified ? true : false,
       team: user.team,
       stats: {
-        accounts: user._count.accounts,
-        contacts: user._count.contacts,
-        deals: user._count.deals,
+        accounts: user._count.ownedAccounts,
+        contacts: user._count.ownedContacts,
+        deals: user._count.ownedDeals,
       },
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),

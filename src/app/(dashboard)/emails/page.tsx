@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { Suspense, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmailHeader } from '@/components/features/emails/email-header';
 import { EmailList } from '@/components/features/emails/email-list';
@@ -8,7 +8,7 @@ import { EmailCompose } from '@/components/features/emails/email-compose';
 import { TemplateList } from '@/components/features/emails/template-list';
 import { TemplateForm } from '@/components/features/emails/template-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useEmails, useDeleteEmail, useEmailTemplates, useDeleteEmailTemplate, useUpdateEmailTemplate } from '@/hooks/use-emails';
+import { useEmails, useDeleteEmail, useEmailTemplates, useDeleteEmailTemplate } from '@/hooks/use-emails';
 import { useSearchParamsState } from '@/hooks/use-search-params';
 import { toast } from 'sonner';
 
@@ -30,10 +30,18 @@ interface EmailTemplate {
   updatedAt: string;
 }
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 /**
- * メール一覧・管理ページ
+ * メール一覧・管理ページ（useSearchParams 利用のため Suspense 内で表示）
  */
-export default function EmailsPage() {
+function EmailsPageContent() {
   const router = useRouter();
   const { get, setOne, clear } = useSearchParamsState<EmailFilters>();
   const [activeTab, setActiveTab] = useState('emails');
@@ -121,8 +129,15 @@ export default function EmailsPage() {
   // デフォルト切り替え
   const handleToggleDefault = useCallback(async (id: string, isDefault: boolean) => {
     try {
-      const updateMutation = useUpdateEmailTemplate(id);
-      // Note: This needs proper implementation with the hook
+      const res = await fetch(`/api/emails/templates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDefault }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || '更新に失敗しました');
+      }
       toast.success(isDefault ? 'デフォルトに設定しました' : 'デフォルトを解除しました');
       refetchTemplates();
     } catch (error) {
@@ -232,5 +247,16 @@ export default function EmailsPage() {
         template={editingTemplate || undefined}
       />
     </div>
+  );
+}
+
+/**
+ * メール一覧・管理ページ
+ */
+export default function EmailsPage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <EmailsPageContent />
+    </Suspense>
   );
 }

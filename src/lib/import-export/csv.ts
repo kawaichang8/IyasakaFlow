@@ -73,16 +73,22 @@ export function parseCsv(
 ): Record<string, string>[] {
   const lines = csvText.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) return [];
-  const headerRow = parseCsvLine(lines[0]);
+  const firstLine = lines[0];
+  if (!firstLine) return [];
+  const headerRow = parseCsvLine(firstLine);
   const headerMap = headerRow.map((h) => h.trim().toLowerCase());
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const values = parseCsvLine(lines[i]);
+    const line = lines[i];
+    if (!line) continue;
+    const values = parseCsvLine(line);
     const row: Record<string, string> = {};
     columns.forEach((col) => {
-      const idx = headerMap.indexOf(col.toLowerCase());
-      if (idx >= 0 && values[idx] !== undefined) {
-        row[col] = values[idx].replace(/^"|"$/g, '').replace(/""/g, '"');
+      const colStr = typeof col === 'string' ? col : String(col);
+      const idx = headerMap.indexOf(colStr.toLowerCase());
+      const raw = idx >= 0 ? values[idx] : undefined;
+      if (raw !== undefined && raw !== null) {
+        row[colStr] = String(raw).replace(/^"|"$/g, '').replace(/""/g, '"');
       }
     });
     rows.push(row);
