@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -108,8 +109,8 @@ export function Sidebar() {
       {/* ロゴ・アプリ名 */}
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Building2 className="h-5 w-5" />
+          <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg">
+            <Image src="/icon.png" alt="Iyasaka Flow" fill sizes="32px" className="object-contain" />
           </div>
           <span className="text-lg font-bold">Iyasaka Flow</span>
         </Link>

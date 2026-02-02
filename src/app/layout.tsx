@@ -13,6 +13,10 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Iyasaka Flow - BtoB営業・顧客管理ツール',
   description: 'Iyasaka Flow - 営業プロセスを一元化し、ビジネスをますます繁栄させるCRM + MAアプリケーション',
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
+  },
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
-import { Building2 } from 'lucide-react';
 import { RegisterForm } from '@/components/features/auth/register-form';
 import { OAuthButtons } from '@/components/features/auth/oauth-buttons';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +18,8 @@ export default function RegisterPage() {
     <Card className="border-0 shadow-lg">
       <CardHeader className="space-y-1 text-center">
         {/* ロゴ */}
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Building2 className="h-6 w-6" />
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden">
+          <Image src="/icon.png" alt="Iyasaka Flow" width={48} height={48} className="object-contain" />
         </div>
         <CardTitle className="text-2xl font-bold">アカウントを作成</CardTitle>
         <CardDescription>
