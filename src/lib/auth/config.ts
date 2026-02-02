@@ -41,7 +41,9 @@ const providers: NextAuthConfig['providers'] = [
         return null;
       }
 
-      const { email, password } = parsedCredentials.data;
+      // メールは前後空白除去・小文字化（登録時と同一ルール）
+      const email = parsedCredentials.data.email.trim().toLowerCase();
+      const password = parsedCredentials.data.password;
 
       // ユーザーを検索
       const user = await prisma.user.findUnique({

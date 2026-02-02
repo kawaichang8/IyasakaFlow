@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
@@ -16,7 +16,6 @@ import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
  * メール/パスワード認証
  */
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   
@@ -39,8 +38,10 @@ export function LoginForm() {
     try {
       setError(null);
 
+      // メールは前後空白除去・小文字化（登録時と同一ルール）
+      const email = data.email.trim().toLowerCase();
       const result = await signIn('credentials', {
-        email: data.email,
+        email,
         password: data.password,
         redirect: false,
       });
@@ -50,8 +51,8 @@ export function LoginForm() {
         return;
       }
 
-      router.push(callbackUrl);
-      router.refresh();
+      // セッションを確実に反映させるためフルページ遷移
+      window.location.href = callbackUrl;
     } catch (err) {
       setError('ログインに失敗しました。もう一度お試しください。');
     }

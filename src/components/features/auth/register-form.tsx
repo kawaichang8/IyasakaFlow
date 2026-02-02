@@ -72,22 +72,22 @@ export function RegisterForm() {
         return;
       }
 
-      // 登録成功後、自動ログイン
+      // 登録成功後、自動ログイン（メールは前後空白を除去して送信）
+      const email = data.email.trim().toLowerCase();
       const signInResult = await signIn('credentials', {
-        email: data.email,
+        email,
         password: data.password,
         redirect: false,
       });
 
       if (signInResult?.error) {
-        // ログイン失敗時はログインページへ
+        // ログイン失敗時はログインページへ（登録は完了している旨を伝える）
         router.push('/login?registered=true');
         return;
       }
 
-      // ダッシュボードへリダイレクト
-      router.push('/dashboard');
-      router.refresh();
+      // セッションを確実に反映させるためフルページ遷移でダッシュボードへ
+      window.location.href = '/dashboard';
     } catch (err) {
       setError('登録に失敗しました。もう一度お試しください。');
     }

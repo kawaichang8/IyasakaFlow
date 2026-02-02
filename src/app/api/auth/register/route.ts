@@ -21,12 +21,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // バリデーション
-    const validatedData = registerSchema.parse(body);
+    // バリデーション（メールは前後空白除去・小文字化で統一）
+    const raw = registerSchema.parse(body);
+    const email = raw.email.trim().toLowerCase();
+    const name = raw.name.trim();
     
     // 既存ユーザーの確認
     const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+      where: { email },
     });
     
     if (existingUser) {
@@ -37,13 +39,13 @@ export async function POST(request: NextRequest) {
     }
     
     // パスワードをハッシュ化
-    const hashedPassword = await bcrypt.hash(validatedData.password, 12);
+    const hashedPassword = await bcrypt.hash(raw.password, 12);
     
     // ユーザーを作成
     const user = await prisma.user.create({
       data: {
-        name: validatedData.name,
-        email: validatedData.email,
+        name: name || email,
+        email,
         password: hashedPassword,
       },
       select: {
