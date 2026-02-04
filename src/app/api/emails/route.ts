@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { auth } from '@/lib/auth';
 import { emailSchema, sendEmailSchema } from '@/lib/validations/email';
 import { getEmailService } from '@/lib/email';
 import { Prisma } from '@prisma/client';
@@ -151,10 +152,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action } = body; // 'draft' | 'send'
     
-    // TODO: 認証から取得
-    const userId = body.userId || 'demo-user-id';
-    const userEmail = body.userEmail || 'demo@example.com';
-    const userName = body.userName || 'Demo User';
+    const session = await auth();
+    const userId = session?.user?.id ?? body.userId ?? null;
+    const userEmail = (session?.user?.email as string | undefined) ?? body.userEmail ?? 'noreply@example.com';
+    const userName = (session?.user?.name as string | undefined) ?? body.userName ?? 'Iyasaka Flow';
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'メールの作成にはログインが必要です' },
+        { status: 401 }
+      );
+    }
     
     if (action === 'send') {
       // 送信の場合はsendEmailSchemaでバリデーション

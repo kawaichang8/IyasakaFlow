@@ -17,7 +17,9 @@ import {
   Settings,
   HelpCircle,
   Zap,
+  X,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 /**
  * サイドバーナビゲーション
@@ -101,24 +103,36 @@ const settingsNavItems: NavItem[] = [
   },
 ];
 
-export function Sidebar() {
-  const pathname = usePathname();
+interface SidebarProps {
+  /** モバイルでドロップダウン表示する場合は true */
+  open?: boolean;
+  /** モバイルで閉じるコールバック（指定時のみモバイルオーバーレイを表示） */
+  onClose?: () => void;
+}
 
-  return (
-    <aside className="hidden w-64 flex-col border-r bg-card lg:flex">
+export function Sidebar({ open = true, onClose }: SidebarProps) {
+  const pathname = usePathname();
+  const isMobile = typeof onClose === 'function';
+
+  const navContent = (
+    <>
       {/* ロゴ・アプリ名 */}
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
+      <div className="flex h-16 items-center justify-between border-b px-6">
+        <Link href="/dashboard" className="flex items-center gap-2" onClick={onClose}>
           <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg">
             <Image src="/icon.png" alt="Iyasaka Flow" fill sizes="32px" className="object-contain" />
           </div>
           <span className="text-lg font-bold">Iyasaka Flow</span>
         </Link>
+        {isMobile && (
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="メニューを閉じる">
+            <X className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
       {/* ナビゲーション */}
       <nav className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-        {/* メインナビ */}
         <div className="space-y-1">
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             営業管理
@@ -128,11 +142,10 @@ export function Sidebar() {
               key={item.href}
               item={item}
               isActive={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+              onClick={onClose}
             />
           ))}
         </div>
-
-        {/* マーケティング */}
         <div className="mt-6 space-y-1">
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             マーケティング
@@ -142,11 +155,10 @@ export function Sidebar() {
               key={item.href}
               item={item}
               isActive={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+              onClick={onClose}
             />
           ))}
         </div>
-
-        {/* 設定 */}
         <div className="mt-6 space-y-1">
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             その他
@@ -156,12 +168,12 @@ export function Sidebar() {
               key={item.href}
               item={item}
               isActive={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+              onClick={onClose}
             />
           ))}
         </div>
       </nav>
 
-      {/* 初心者向けヒント */}
       <div className="border-t p-4">
         <div className="rounded-lg bg-primary/10 p-3">
           <p className="text-sm font-medium text-primary">ヒント</p>
@@ -170,17 +182,56 @@ export function Sidebar() {
           </p>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* デスクトップ: 常に表示 */}
+      <aside className="hidden w-64 flex-col border-r bg-card lg:flex">
+        {navContent}
+      </aside>
+
+      {/* モバイル: オーバーレイ（open 時のみ表示） */}
+      {isMobile && (
+        <>
+          {open && (
+            <div
+              className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+              aria-hidden
+              onClick={onClose}
+            />
+          )}
+          <aside
+            className={cn(
+              'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-card shadow-lg transition-transform duration-200 ease-out lg:hidden',
+              open ? 'translate-x-0' : '-translate-x-full'
+            )}
+          >
+            {navContent}
+          </aside>
+        </>
+      )}
+    </>
   );
 }
 
 /**
  * ナビゲーションリンクコンポーネント
  */
-function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
+function NavLink({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onClick?: () => void;
+}) {
   return (
     <Link
       href={item.href}
+      onClick={onClick}
       className={cn(
         'flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors',
         isActive

@@ -17,12 +17,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { GlobalSearch } from '@/components/features/search';
+import {
+  NotificationDropdownContent,
+  useNotificationCount,
+} from '@/components/features/dashboard';
+
+interface HeaderProps {
+  /** モバイルでメニューボタン押下時（サイドバーを開く） */
+  onMenuClick?: () => void;
+}
 
 /**
  * ヘッダーコンポーネント
  * 検索、通知、ユーザーメニューを提供
  */
-export function Header() {
+export function Header({ onMenuClick }: HeaderProps) {
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const searchTriggerRef = useRef<HTMLInputElement>(null);
 
@@ -31,7 +40,13 @@ export function Header() {
       {/* 左側: モバイルメニュー + 検索 */}
       <div className="flex items-center gap-4">
         {/* モバイルメニューボタン */}
-        <Button variant="ghost" size="icon" className="lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={onMenuClick}
+          type="button"
+        >
           <Menu className="h-5 w-5" />
           <span className="sr-only">メニュー</span>
         </Button>
@@ -68,17 +83,37 @@ export function Header() {
         <QuickAddMenu />
 
         {/* 通知 */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">通知</span>
-          {/* 通知バッジ */}
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+        <NotificationBell />
+
 
         {/* ユーザーメニュー */}
         <UserMenu />
       </div>
     </header>
+  );
+}
+
+/**
+ * 通知ベル（ドロップダウン + 件数バッジ）
+ */
+function NotificationBell() {
+  const count = useNotificationCount();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="h-5 w-5" />
+          <span className="sr-only">通知</span>
+          {count > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
+              {count > 99 ? '99+' : count}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <NotificationDropdownContent />
+    </DropdownMenu>
   );
 }
 

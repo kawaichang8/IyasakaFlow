@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { auth } from '@/lib/auth';
 import { emailTemplateSchema } from '@/lib/validations/email';
 import { getEmailService } from '@/lib/email';
 import { Prisma } from '@prisma/client';
@@ -108,9 +109,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // TODO: 認証から取得
-    const userId = body.userId || 'demo-user-id';
+    const session = await auth();
+    const userId = session?.user?.id ?? body.userId ?? null;
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'テンプレートの作成にはログインが必要です' },
+        { status: 401 }
+      );
+    }
     
     // バリデーション
     const validatedData = emailTemplateSchema.parse(body);

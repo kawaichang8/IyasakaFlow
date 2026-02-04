@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { prisma } from '@/lib/db';
 import { AccountDetail } from '@/components/features/accounts/account-detail';
 
 interface AccountDetailPageProps {
@@ -9,12 +10,22 @@ interface AccountDetailPageProps {
 }
 
 export async function generateMetadata({
-  params: _params,
+  params,
 }: AccountDetailPageProps): Promise<Metadata> {
-  // TODO: 実際のアカウント名を取得
+  const { id } = params;
+  const account = await prisma.account.findUnique({
+    where: { id },
+    select: { name: true },
+  });
+  if (!account) {
+    return {
+      title: '企業詳細 | Iyasaka Flow',
+      description: '企業アカウントの詳細情報',
+    };
+  }
   return {
-    title: `企業詳細 | Iyasaka Flow`,
-    description: '企業アカウントの詳細情報',
+    title: `${account.name} | Iyasaka Flow`,
+    description: `${account.name}の企業アカウント詳細`,
   };
 }
 

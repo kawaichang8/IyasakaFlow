@@ -13,6 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -21,8 +28,33 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatRelativeTime } from '@/lib/utils';
-import { useContacts } from '@/hooks/use-contacts';
+import { useContacts, useDeleteContact } from '@/hooks/use-contacts';
+import { ContactForm } from './contact-form';
+import { toast } from 'sonner';
+import type { ContactFormData } from '@/lib/validations/contact';
 import type { Contact, QueryParams } from '@/types';
+
+/** APIの連絡先をフォームの initialData に変換 */
+function contactToFormData(contact: Contact & { account?: { id: string; name: string } }): Partial<ContactFormData> & { id: string } {
+  const accountId = contact.account?.id ?? contact.accountId;
+  return {
+    id: contact.id,
+    accountId: accountId ?? '',
+    name: contact.name,
+    firstName: contact.firstName ?? '',
+    lastName: contact.lastName ?? '',
+    email: contact.email ?? '',
+    phone: contact.phone ?? '',
+    mobile: contact.mobile ?? '',
+    role: contact.role ?? '',
+    department: contact.department ?? '',
+    company: contact.company ?? contact.account?.name ?? '',
+    influenceLevel: (contact.influenceLevel as ContactFormData['influenceLevel']) ?? 'other',
+    status: contact.status,
+    tags: contact.tags ?? [],
+    notes: contact.notes ?? '',
+  };
+}
 
 interface ContactListProps {
   params?: { search?: string; accountId?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
@@ -32,10 +64,25 @@ interface ContactListProps {
  * 連絡先一覧コンポーネント
  * 検索・フィルターはURL連携
  */
+type ContactWithAccount = Contact & { account?: { id: string; name: string } };
+
 export function ContactList({ params }: ContactListProps) {
   const { data, isLoading, error } = useContacts(params as QueryParams | undefined);
+  const deleteMutation = useDeleteContact();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
-  const contacts = data?.data ?? [];
+  const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
+  const contacts = (data?.data ?? []) as ContactWithAccount[];
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`「${name}」を削除してもよろしいですか？`)) return;
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success('連絡先を削除しました');
+      setEditingContact(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '削除に失敗しました');
+    }
+  };
 
   if (error) {
     return (
@@ -89,6 +136,25 @@ export function ContactList({ params }: ContactListProps) {
         </Button>
       </div>
 
+      {/* 編集ダイアログ */}
+      <Dialog open={!!editingContact} onOpenChange={(open) => !open && setEditingContact(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>連絡先を編集</DialogTitle>
+            <DialogDescription>
+              担当者情報を変更できます
+            </DialogDescription>
+          </DialogHeader>
+          {editingContact && (
+            <ContactForm
+              initialData={contactToFormData(editingContact)}
+              onSuccess={() => setEditingContact(null)}
+              onCancel={() => setEditingContact(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {viewMode === 'table' && (
         <div className="rounded-md border">
           <table className="w-full">
@@ -104,7 +170,12 @@ export function ContactList({ params }: ContactListProps) {
             </thead>
             <tbody>
               {contacts.map((contact) => (
-                <ContactTableRow key={contact.id} contact={contact} />
+                <ContactTableRow
+                  key={contact.id}
+                  contact={contact}
+                  onEdit={() => setEditingContact(contact)}
+                  onDelete={() => handleDelete(contact.id, contact.name)}
+                />
               ))}
             </tbody>
           </table>
@@ -114,7 +185,12 @@ export function ContactList({ params }: ContactListProps) {
       {viewMode === 'card' && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {contacts.map((contact) => (
-            <ContactCard key={contact.id} contact={contact} />
+            <ContactCard
+              key={contact.id}
+              contact={contact}
+              onEdit={() => setEditingContact(contact)}
+              onDelete={() => handleDelete(contact.id, contact.name)}
+            />
           ))}
         </div>
       )}
@@ -122,7 +198,15 @@ export function ContactList({ params }: ContactListProps) {
   );
 }
 
-function ContactTableRow({ contact }: { contact: Contact & { account?: { id: string; name: string } } }) {
+function ContactTableRow({
+  contact,
+  onEdit,
+  onDelete,
+}: {
+  contact: ContactWithAccount;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const accountId = contact.account?.id ?? contact.accountId;
   return (
     <tr className="border-b transition-colors hover:bg-muted/50">
@@ -151,7 +235,7 @@ function ContactTableRow({ contact }: { contact: Contact & { account?: { id: str
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <Building2 className="h-4 w-4" />
-          {contact.account?.name ?? (contact as any).company ?? '—'}
+          {contact.account?.name ?? (contact as Contact).company ?? '—'}
         </Link>
         ) : (
           <span className="text-muted-foreground">—</span>
@@ -167,13 +251,13 @@ function ContactTableRow({ contact }: { contact: Contact & { account?: { id: str
         {contact.lastContactDate ? formatRelativeTime(contact.lastContactDate) : '-'}
       </td>
       <td className="px-4 py-3 text-right">
-        <ContactActions contact={contact} />
+        <ContactActions contact={contact} onEdit={onEdit} onDelete={onDelete} />
       </td>
     </tr>
   );
 }
 
-function ContactCard({ contact }: { contact: Contact }) {
+function ContactCard({ contact, onEdit, onDelete }: { contact: ContactWithAccount; onEdit: () => void; onDelete: () => void }) {
   return (
     <Card className="transition-shadow hover:shadow-md">
       <CardContent className="p-4">
@@ -189,7 +273,7 @@ function ContactCard({ contact }: { contact: Contact }) {
               <p className="text-sm text-muted-foreground">{contact.role || '役職未設定'}</p>
             </div>
           </Link>
-          <ContactActions contact={contact} />
+          <ContactActions contact={contact} onEdit={onEdit} onDelete={onDelete} />
         </div>
 
         <div className="mt-4 flex items-center gap-2">
@@ -279,7 +363,8 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ContactActions({ contact }: { contact: Contact }) {
+function ContactActions({ contact, onEdit, onDelete }: { contact: Contact; onEdit: () => void; onDelete: () => void }) {
+  const accountId = (contact as ContactWithAccount).account?.id ?? contact.accountId;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -294,11 +379,21 @@ function ContactActions({ contact }: { contact: Contact }) {
         <DropdownMenuItem asChild>
           <Link href={`/contacts/${contact.id}`}>詳細を見る</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>編集</DropdownMenuItem>
-        <DropdownMenuItem>活動を記録</DropdownMenuItem>
-        <DropdownMenuItem>タスクを作成</DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>編集</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={accountId ? `/activities?accountId=${accountId}&contactId=${contact.id}` : '/activities'}>
+            活動を記録
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={accountId ? `/tasks?openCreate=1&accountId=${accountId}` : '/tasks?openCreate=1'}>
+            タスクを作成
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive">削除</DropdownMenuItem>
+        <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+          削除
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

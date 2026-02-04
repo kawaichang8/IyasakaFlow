@@ -18,7 +18,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { useAccount } from '@/hooks/use-accounts';
+import { AccountForm } from './account-form';
+import type { AccountFormData } from '@/lib/validations/account';
+import type { Account } from '@/types';
 
 interface AccountDetailProps {
   accountId: string;
@@ -29,13 +40,31 @@ interface AccountDetailProps {
  * 企業情報、連絡先一覧、取引履歴、インタラクション履歴を表示
  */
 export function AccountDetail({ accountId }: AccountDetailProps) {
-  // TODO: TanStack Queryでデータフェッチ
-  const [account] = useState(getMockAccountDetail(accountId));
+  const { data, isLoading, error } = useAccount(accountId);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const account = data?.data as (Account & {
+    contacts?: Array<{ id: string; name: string; email?: string; role?: string; influenceLevel?: string }>;
+    deals?: Array<{ id: string; name: string; value: number; stage: string }>;
+    interactions?: Array<{ id: string; type: string; note: string | null; date: string }>;
+    totalDealValue?: number;
+  }) | undefined;
 
-  if (!account) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="mt-4 text-muted-foreground">読み込み中...</p>
+      </div>
+    );
+  }
+
+  if (error || !account) {
     return (
       <div className="flex flex-col items-center justify-center p-12">
         <p className="text-muted-foreground">アカウントが見つかりません</p>
+        <Link href="/accounts" className="mt-4 text-sm text-primary hover:underline">
+          一覧に戻る
+        </Link>
       </div>
     );
   }
@@ -56,23 +85,42 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{account.name}</h1>
-            <p className="text-muted-foreground">{account.industry}</p>
+            <p className="text-muted-foreground">{account.industry ?? '—'}</p>
             <div className="mt-1">
               <StatusBadge status={account.status} />
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setEditingAccount(account)}>
             <Edit className="mr-2 h-4 w-4" />
             編集
           </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            連絡先を追加
+          <Button asChild>
+            <Link href={`/contacts?openCreate=1&accountId=${account.id}`}>
+              <Plus className="mr-2 h-4 w-4" />
+              連絡先を追加
+            </Link>
           </Button>
         </div>
       </div>
+
+      {/* 編集ダイアログ */}
+      <Dialog open={!!editingAccount} onOpenChange={(open) => !open && setEditingAccount(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>企業アカウントを編集</DialogTitle>
+            <DialogDescription>顧客企業の情報を変更できます</DialogDescription>
+          </DialogHeader>
+          {editingAccount && (
+            <AccountForm
+              initialData={accountToFormData(editingAccount)}
+              onSuccess={() => setEditingAccount(null)}
+              onCancel={() => setEditingAccount(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* 概要カード */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -80,7 +128,7 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
           <CardContent className="flex items-center gap-4 pt-6">
             <Users className="h-8 w-8 text-muted-foreground" />
             <div>
-              <p className="text-2xl font-bold">{account.contacts?.length || 0}</p>
+              <p className="text-2xl font-bold">{account.contacts?.length ?? 0}</p>
               <p className="text-sm text-muted-foreground">連絡先</p>
             </div>
           </CardContent>
@@ -89,7 +137,7 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
           <CardContent className="flex items-center gap-4 pt-6">
             <TrendingUp className="h-8 w-8 text-muted-foreground" />
             <div>
-              <p className="text-2xl font-bold">{account.deals?.length || 0}</p>
+              <p className="text-2xl font-bold">{account.deals?.length ?? 0}</p>
               <p className="text-sm text-muted-foreground">進行中の案件</p>
             </div>
           </CardContent>
@@ -98,7 +146,7 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
           <CardContent className="flex items-center gap-4 pt-6">
             <div className="text-2xl">¥</div>
             <div>
-              <p className="text-2xl font-bold">{formatCurrency(account.totalDealValue || 0)}</p>
+              <p className="text-2xl font-bold">{formatCurrency(account.totalDealValue ?? 0)}</p>
               <p className="text-sm text-muted-foreground">取引総額</p>
             </div>
           </CardContent>
@@ -156,20 +204,18 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
                 <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
                   {account.postalCode && `〒${account.postalCode} `}
-                  {account.state}{account.city}{account.address}
+                  {[account.state, account.city, account.address].filter(Boolean).join('')}
                 </span>
               </div>
             )}
-            
             <div className="border-t pt-4">
               <p className="text-sm text-muted-foreground">従業員数</p>
-              <p className="font-medium">{account.employeeCount?.toLocaleString() || '-'} 名</p>
+              <p className="font-medium">{account.employeeCount?.toLocaleString() ?? '-'} 名</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">年間売上</p>
-              <p className="font-medium">{account.annualRevenue ? formatCurrency(account.annualRevenue) : '-'}</p>
+              <p className="font-medium">{account.annualRevenue ? formatCurrency(Number(account.annualRevenue)) : '-'}</p>
             </div>
-            
             {account.description && (
               <div className="border-t pt-4">
                 <p className="text-sm text-muted-foreground">メモ</p>
@@ -186,15 +232,17 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
               <CardTitle>連絡先</CardTitle>
               <CardDescription>この企業の担当者一覧</CardDescription>
             </div>
-            <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              追加
+            <Button size="sm" asChild>
+              <Link href={`/contacts?openCreate=1&accountId=${account.id}`}>
+                <Plus className="mr-2 h-4 w-4" />
+                追加
+              </Link>
             </Button>
           </CardHeader>
           <CardContent>
             {account.contacts && account.contacts.length > 0 ? (
               <div className="space-y-3">
-                {account.contacts.map((contact: any) => (
+                {account.contacts.map((contact: { id: string; name: string; email?: string; role?: string; influenceLevel?: string }) => (
                   <div 
                     key={contact.id}
                     className="flex items-center justify-between rounded-lg border p-3"
@@ -213,7 +261,7 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
                           {contact.name}
                         </Link>
                         <p className="text-sm text-muted-foreground">
-                          {contact.role}
+                          {contact.role ?? '—'}
                         </p>
                       </div>
                     </div>
@@ -246,15 +294,17 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
             <CardTitle>インタラクション履歴</CardTitle>
             <CardDescription>この企業との活動履歴</CardDescription>
           </div>
-          <Button size="sm" variant="outline">
-            <Plus className="mr-2 h-4 w-4" />
-            活動を記録
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/activities?accountId=${account.id}`}>
+              <Plus className="mr-2 h-4 w-4" />
+              活動を記録
+            </Link>
           </Button>
         </CardHeader>
         <CardContent>
           {account.interactions && account.interactions.length > 0 ? (
             <div className="space-y-4">
-              {account.interactions.map((interaction: any) => (
+              {account.interactions.map((interaction: { id: string; type: string; note: string | null; date: string }) => (
                 <div 
                   key={interaction.id}
                   className="flex gap-4 border-l-2 border-primary/20 pl-4"
@@ -266,7 +316,7 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
                         {formatDate(interaction.date)}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm">{interaction.note}</p>
+                    <p className="mt-1 text-sm">{interaction.note ?? '—'}</p>
                   </div>
                 </div>
               ))}
@@ -280,6 +330,27 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
       </Card>
     </div>
   );
+}
+
+function accountToFormData(account: Account): Partial<AccountFormData> & { id: string } {
+  return {
+    id: account.id,
+    name: account.name,
+    industry: account.industry ?? '',
+    website: account.website ?? '',
+    phone: account.phone ?? '',
+    email: account.email ?? '',
+    address: account.address ?? '',
+    city: account.city ?? '',
+    state: account.state ?? '',
+    postalCode: account.postalCode ?? '',
+    country: account.country ?? '日本',
+    employeeCount: account.employeeCount ?? undefined,
+    annualRevenue: account.annualRevenue ?? undefined,
+    status: account.status,
+    description: account.description ?? '',
+    tags: account.tags ?? [],
+  };
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -330,35 +401,4 @@ function getInteractionTypeLabel(type: string): string {
     task: 'タスク',
   };
   return labels[type] || type;
-}
-
-function getMockAccountDetail(id: string) {
-  return {
-    id,
-    name: '株式会社ABC',
-    industry: 'IT・ソフトウェア',
-    website: 'https://abc-corp.example.com',
-    phone: '03-1234-5678',
-    email: 'info@abc.example.com',
-    address: '1-2-3 ABCビル5F',
-    city: '渋谷区',
-    state: '東京都',
-    postalCode: '150-0001',
-    employeeCount: 150,
-    annualRevenue: 500000000,
-    status: 'active',
-    description: 'ITソリューションを提供する企業。クラウドサービスに積極的。',
-    totalDealValue: 3000000,
-    contacts: [
-      { id: 'con_1', name: '田中太郎', role: '代表取締役', email: 'tanaka@abc.example.com', influenceLevel: 'decision_maker' },
-      { id: 'con_2', name: '鈴木花子', role: '営業部長', email: 'suzuki@abc.example.com', influenceLevel: 'influencer' },
-    ],
-    interactions: [
-      { id: 'int_1', type: 'meeting', date: '2024-01-20', note: '初回打ち合わせ。課題のヒアリングを実施。' },
-      { id: 'int_2', type: 'email', date: '2024-01-25', note: '提案書を送付' },
-    ],
-    deals: [],
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-20T15:30:00Z',
-  };
 }

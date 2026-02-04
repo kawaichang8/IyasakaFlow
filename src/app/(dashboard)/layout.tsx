@@ -1,32 +1,15 @@
-import { Sidebar } from '@/components/layouts/sidebar';
-import { Header } from '@/components/layouts/header';
+import { DashboardShell } from '@/components/layouts/dashboard-shell';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * ダッシュボードレイアウト
- * サイドバーとヘッダーを含むメインレイアウト
+ * サイドバーとヘッダーを含むメインレイアウト（モバイルメニュー対応）
  */
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* サイドバー */}
-      <Sidebar />
-      
-      {/* メインコンテンツエリア */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* ヘッダー */}
-        <Header />
-        
-        {/* ページコンテンツ */}
-        <main className="flex-1 overflow-y-auto p-6 scrollbar-thin">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+  return <DashboardShell>{children}</DashboardShell>;
 }
