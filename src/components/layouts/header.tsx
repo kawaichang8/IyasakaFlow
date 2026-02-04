@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { Bell, Search, User, Menu, Plus, LogOut, Settings, Building2, Users, TrendingUp, CheckSquare, Zap } from 'lucide-react';
+import { Search, User, Menu, Plus, LogOut, Settings, Building2, Users, TrendingUp, CheckSquare, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,10 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { GlobalSearch } from '@/components/features/search';
-import {
-  NotificationDropdownContent,
-  useNotificationCount,
-} from '../features/dashboard/notification-dropdown';
+import { NotificationBell } from '@/components/features/dashboard';
 
 interface HeaderProps {
   /** モバイルでメニューボタン押下時（サイドバーを開く） */
@@ -85,35 +82,10 @@ export function Header({ onMenuClick }: HeaderProps) {
         {/* 通知 */}
         <NotificationBell />
 
-
         {/* ユーザーメニュー */}
         <UserMenu />
       </div>
     </header>
-  );
-}
-
-/**
- * 通知ベル（ドロップダウン + 件数バッジ）
- */
-function NotificationBell() {
-  const count = useNotificationCount();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">通知</span>
-          {count > 0 && (
-            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
-              {count > 99 ? '99+' : count}
-            </span>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <NotificationDropdownContent />
-    </DropdownMenu>
   );
 }
 
