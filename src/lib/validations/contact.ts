@@ -70,10 +70,10 @@ export const contactSchema = z.object({
   
   email: z
     .string()
-    .email('有効なメールアドレスを入力してください')
     .optional()
     .nullable()
-    .or(z.literal('')),
+    .transform((v) => (v === '' || v == null ? null : v))
+    .pipe(z.union([z.literal(null), z.string().email('有効なメールアドレスを入力してください')])),
   
   phone: z
     .string()

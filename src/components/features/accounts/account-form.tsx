@@ -13,9 +13,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { accountSchema, type AccountFormData } from '@/lib/validations/account';
+import { toast } from 'sonner';
 
 interface AccountFormProps {
-  initialData?: Partial<AccountFormData>;
+  initialData?: Partial<AccountFormData> & { id?: string };
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -57,21 +58,27 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
 
   const onSubmit = async (data: AccountFormData) => {
     try {
-      // TODO: APIコールを実装
-      const response = await fetch('/api/accounts', {
-        method: initialData ? 'PATCH' : 'POST',
+      const isEdit = initialData?.id;
+      const url = isEdit ? `/api/accounts/${initialData.id}` : '/api/accounts';
+      const response = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
+      const result = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error('保存に失敗しました');
+        const message = result.error || (result.details && Array.isArray(result.details) ? result.details.map((d: { message?: string }) => d.message).filter(Boolean).join(', ') : null) || '保存に失敗しました';
+        toast.error(message);
+        return;
       }
 
+      toast.success(isEdit ? '企業アカウントを更新しました' : '企業アカウントを作成しました');
       onSuccess?.();
     } catch (error) {
       console.error('Error saving account:', error);
-      // TODO: トースト通知でエラーを表示
+      toast.error(error instanceof Error ? error.message : '保存に失敗しました');
     }
   };
 

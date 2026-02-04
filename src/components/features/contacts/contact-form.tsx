@@ -13,9 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { contactSchema, type ContactFormData } from '@/lib/validations/contact';
+import { useAccounts } from '@/hooks/use-accounts';
+import { toast } from 'sonner';
 
 interface ContactFormProps {
-  initialData?: Partial<ContactFormData>;
+  initialData?: Partial<ContactFormData> & { id?: string };
   accountId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -58,28 +60,33 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
 
   const onSubmit = async (data: ContactFormData) => {
     try {
-      const response = await fetch('/api/contacts', {
-        method: initialData ? 'PATCH' : 'POST',
+      const isEdit = !!initialData?.id;
+      const url = isEdit ? `/api/contacts/${initialData.id}` : '/api/contacts';
+      const response = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
+      const result = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error('保存に失敗しました');
+        const message = result.error || (result.details && Array.isArray(result.details) ? result.details.map((d: { message?: string }) => d.message).filter(Boolean).join(', ') : null) || '保存に失敗しました';
+        toast.error(message);
+        return;
       }
 
+      toast.success(isEdit ? '連絡先を更新しました' : '連絡先を作成しました');
       onSuccess?.();
     } catch (error) {
       console.error('Error saving contact:', error);
+      toast.error(error instanceof Error ? error.message : '保存に失敗しました');
     }
   };
 
-  // モック企業リスト（TODO: APIから取得）
-  const accounts = [
-    { id: 'acc_1', name: '株式会社ABC' },
-    { id: 'acc_2', name: 'XYZ株式会社' },
-    { id: 'acc_3', name: 'DEF商事株式会社' },
-  ];
+  // APIから企業一覧を取得（所属企業の選択肢）
+  const { data: accountsData } = useAccounts({ limit: 500 });
+  const accounts = accountsData?.data ?? [];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -95,9 +102,10 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
           <Select
             value={watch('accountId')}
             onValueChange={(value) => setValue('accountId', value)}
+            disabled={accounts.length === 0}
           >
             <SelectTrigger>
-              <SelectValue placeholder="企業を選択" />
+              <SelectValue placeholder={accounts.length === 0 ? 'まず企業アカウントを作成してください' : '企業を選択'} />
             </SelectTrigger>
             <SelectContent>
               {accounts.map((account) => (
@@ -107,6 +115,9 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
               ))}
             </SelectContent>
           </Select>
+          {accounts.length === 0 && (
+            <p className="text-sm text-muted-foreground">連絡先を登録するには、先に企業アカウントを作成してください。</p>
+          )}
           {errors.accountId && (
             <p className="text-sm text-destructive">{errors.accountId.message}</p>
           )}

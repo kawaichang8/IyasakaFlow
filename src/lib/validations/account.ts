@@ -42,10 +42,10 @@ export const accountSchema = z.object({
   
   website: z
     .string()
-    .url('有効なURLを入力してください')
     .optional()
     .nullable()
-    .or(z.literal('')),
+    .transform((v) => (v === '' || v == null ? null : v))
+    .pipe(z.union([z.literal(null), z.string().url('有効なURLを入力してください')])),
   
   phone: z
     .string()
@@ -55,10 +55,10 @@ export const accountSchema = z.object({
   
   email: z
     .string()
-    .email('有効なメールアドレスを入力してください')
     .optional()
     .nullable()
-    .or(z.literal('')),
+    .transform((v) => (v === '' || v == null ? null : v))
+    .pipe(z.union([z.literal(null), z.string().email('有効なメールアドレスを入力してください')])),
   
   address: z
     .string()
