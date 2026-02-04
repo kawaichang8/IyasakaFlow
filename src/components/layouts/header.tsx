@@ -20,7 +20,7 @@ import { GlobalSearch } from '@/components/features/search';
 import {
   NotificationDropdownContent,
   useNotificationCount,
-} from '@/components/features/dashboard/notification-dropdown';
+} from '../features/dashboard/notification-dropdown';
 
 interface HeaderProps {
   /** モバイルでメニューボタン押下時（サイドバーを開く） */
