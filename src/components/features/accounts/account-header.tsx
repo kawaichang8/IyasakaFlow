@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { SearchInput } from '@/components/ui/search-input';
 import { AccountForm } from './account-form';
-import { ACCOUNT_STATUSES } from '@/lib/validations/account';
+import { ACCOUNT_STATUSES, ACCOUNT_INDUSTRIES } from '@/lib/validations/account';
 import { downloadExport } from '@/lib/import-export/download';
 import { toast } from 'sonner';
 
@@ -178,12 +178,11 @@ export function AccountHeader({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">すべて</SelectItem>
-                  <SelectItem value="IT・ソフトウェア">IT・ソフトウェア</SelectItem>
-                  <SelectItem value="製造業">製造業</SelectItem>
-                  <SelectItem value="商社">商社</SelectItem>
-                  <SelectItem value="小売">小売</SelectItem>
-                  <SelectItem value="金融">金融</SelectItem>
-                  <SelectItem value="その他">その他</SelectItem>
+                  {ACCOUNT_INDUSTRIES.map((ind) => (
+                    <SelectItem key={ind} value={ind}>
+                      {ind}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

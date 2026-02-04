@@ -15,6 +15,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -24,11 +31,35 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatCurrency } from '@/lib/utils';
 import { useAccounts } from '@/hooks/use-accounts';
+import { AccountForm } from './account-form';
+import type { AccountFormData } from '@/lib/validations/account';
 import type { Account, QueryParams } from '@/types';
 
 interface AccountWithCounts extends Account {
   contactCount?: number;
   totalDealValue?: number;
+}
+
+/** APIのアカウントをフォームの initialData に変換 */
+function accountToFormData(account: Account): Partial<AccountFormData> & { id: string } {
+  return {
+    id: account.id,
+    name: account.name,
+    industry: account.industry ?? '',
+    website: account.website ?? '',
+    phone: account.phone ?? '',
+    email: account.email ?? '',
+    address: account.address ?? '',
+    city: account.city ?? '',
+    state: account.state ?? '',
+    postalCode: account.postalCode ?? '',
+    country: account.country ?? '日本',
+    employeeCount: account.employeeCount ?? undefined,
+    annualRevenue: account.annualRevenue ?? undefined,
+    status: account.status,
+    description: account.description ?? '',
+    tags: account.tags ?? [],
+  };
 }
 
 interface AccountListProps {
@@ -42,6 +73,7 @@ interface AccountListProps {
 export function AccountList({ params }: AccountListProps) {
   const { data, isLoading, error } = useAccounts(params as QueryParams | undefined);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const [editingAccount, setEditingAccount] = useState<AccountWithCounts | null>(null);
   const accounts = (data?.data ?? []) as AccountWithCounts[];
 
   if (error) {
@@ -97,6 +129,25 @@ export function AccountList({ params }: AccountListProps) {
         </Button>
       </div>
 
+      {/* 編集ダイアログ */}
+      <Dialog open={!!editingAccount} onOpenChange={(open) => !open && setEditingAccount(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>企業アカウントを編集</DialogTitle>
+            <DialogDescription>
+              顧客企業の情報を変更できます
+            </DialogDescription>
+          </DialogHeader>
+          {editingAccount && (
+            <AccountForm
+              initialData={accountToFormData(editingAccount)}
+              onSuccess={() => setEditingAccount(null)}
+              onCancel={() => setEditingAccount(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* テーブル表示 */}
       {viewMode === 'table' && (
         <div className="rounded-md border">
@@ -120,6 +171,7 @@ export function AccountList({ params }: AccountListProps) {
                     contactCount: account.contactCount ?? 0,
                     totalDealValue: account.totalDealValue ?? 0,
                   }}
+                  onEdit={() => setEditingAccount(account)}
                 />
               ))}
             </tbody>
@@ -138,6 +190,7 @@ export function AccountList({ params }: AccountListProps) {
                 contactCount: account.contactCount ?? 0,
                 totalDealValue: account.totalDealValue ?? 0,
               }}
+              onEdit={() => setEditingAccount(account)}
             />
           ))}
         </div>
@@ -149,7 +202,7 @@ export function AccountList({ params }: AccountListProps) {
 /**
  * テーブル行コンポーネント
  */
-function AccountTableRow({ account }: { account: Account & { contactCount?: number; totalDealValue?: number } }) {
+function AccountTableRow({ account, onEdit }: { account: AccountWithCounts; onEdit: () => void }) {
   return (
     <tr className="border-b transition-colors hover:bg-muted/50">
       <td className="px-4 py-3">
@@ -184,7 +237,7 @@ function AccountTableRow({ account }: { account: Account & { contactCount?: numb
         {account.totalDealValue ? formatCurrency(account.totalDealValue) : '-'}
       </td>
       <td className="px-4 py-3 text-right">
-        <AccountActions account={account} />
+        <AccountActions account={account} onEdit={onEdit} />
       </td>
     </tr>
   );
@@ -193,7 +246,7 @@ function AccountTableRow({ account }: { account: Account & { contactCount?: numb
 /**
  * カードコンポーネント
  */
-function AccountCard({ account }: { account: Account & { contactCount?: number; totalDealValue?: number } }) {
+function AccountCard({ account, onEdit }: { account: Account & { contactCount?: number; totalDealValue?: number }; onEdit: () => void }) {
   return (
     <Card className="transition-shadow hover:shadow-md">
       <CardContent className="p-4">
@@ -207,7 +260,7 @@ function AccountCard({ account }: { account: Account & { contactCount?: number; 
               <p className="text-sm text-muted-foreground">{account.industry || '業種未設定'}</p>
             </div>
           </Link>
-          <AccountActions account={account} />
+          <AccountActions account={account} onEdit={onEdit} />
         </div>
 
         <div className="mt-4 flex items-center gap-4 text-sm">
@@ -275,7 +328,7 @@ function StatusBadge({ status }: { status: string }) {
 /**
  * アクションメニュー
  */
-function AccountActions({ account }: { account: Account }) {
+function AccountActions({ account, onEdit }: { account: Account; onEdit?: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -292,7 +345,9 @@ function AccountActions({ account }: { account: Account }) {
             詳細を見る
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>編集</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onEdit?.()}>
+          編集
+        </DropdownMenuItem>
         <DropdownMenuItem>連絡先を追加</DropdownMenuItem>
         <DropdownMenuItem>案件を作成</DropdownMenuItem>
         {account.website && (

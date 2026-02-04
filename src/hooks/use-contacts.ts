@@ -7,7 +7,7 @@ import type { ContactFormData } from '@/lib/validations/contact';
  * TanStack Queryを使用したデータフェッチ
  */
 
-const CONTACTS_QUERY_KEY = 'contacts';
+export const CONTACTS_QUERY_KEY = 'contacts';
 
 /**
  * 連絡先一覧を取得

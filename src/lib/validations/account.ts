@@ -26,6 +26,36 @@ export const ACCOUNT_STATUSES = [
 ] as const;
 
 /**
+ * 業種選択肢（企業アカウント・フィルターで共通利用）
+ */
+export const ACCOUNT_INDUSTRIES = [
+  'IT・ソフトウェア',
+  'SaaS・クラウド',
+  '製造業',
+  'メーカー（消費財）',
+  'メーカー（産業用・BtoB）',
+  'クリエイティブ・広告',
+  'デザイン・映像・制作',
+  'マスコミ・メディア・出版',
+  '商社・卸',
+  '小売・流通',
+  '金融・保険',
+  '不動産・建設',
+  '医療・ヘルスケア・介護',
+  '教育・人材',
+  'コンサルティング',
+  '法律・会計・士業',
+  '運輸・物流',
+  '飲食・フード',
+  '旅行・ホテル・観光',
+  'エネルギー・資源・環境',
+  '公務・自治体・非営利',
+  'その他',
+] as const;
+
+export type AccountIndustry = (typeof ACCOUNT_INDUSTRIES)[number];
+
+/**
  * アカウント作成/更新スキーマ
  */
 export const accountSchema = z.object({

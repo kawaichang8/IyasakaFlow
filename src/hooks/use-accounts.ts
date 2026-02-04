@@ -7,7 +7,7 @@ import type { AccountFormData } from '@/lib/validations/account';
  * TanStack Queryを使用したデータフェッチ
  */
 
-const ACCOUNTS_QUERY_KEY = 'accounts';
+export const ACCOUNTS_QUERY_KEY = 'accounts';
 
 /**
  * アカウント一覧を取得

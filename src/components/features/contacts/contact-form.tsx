@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/select';
 import { contactSchema, type ContactFormData } from '@/lib/validations/contact';
 import { useAccounts } from '@/hooks/use-accounts';
+import { useQueryClient } from '@tanstack/react-query';
+import { CONTACTS_QUERY_KEY } from '@/hooks/use-contacts';
 import { toast } from 'sonner';
 
 interface ContactFormProps {
@@ -28,6 +30,7 @@ interface ContactFormProps {
  * React Hook Form + Zodバリデーション
  */
 export function ContactForm({ initialData, accountId, onSuccess, onCancel }: ContactFormProps) {
+  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -77,6 +80,7 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
       }
 
       toast.success(isEdit ? '連絡先を更新しました' : '連絡先を作成しました');
+      queryClient.invalidateQueries({ queryKey: [CONTACTS_QUERY_KEY] });
       onSuccess?.();
     } catch (error) {
       console.error('Error saving contact:', error);
