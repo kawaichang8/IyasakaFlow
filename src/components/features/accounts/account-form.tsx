@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { accountSchema, type AccountFormData } from '@/lib/validations/account';
+import { accountSchema, ACCOUNT_INDUSTRIES, type AccountFormData } from '@/lib/validations/account';
+import { useQueryClient } from '@tanstack/react-query';
+import { ACCOUNTS_QUERY_KEY } from '@/hooks/use-accounts';
+import { CONTACTS_QUERY_KEY } from '@/hooks/use-contacts';
 import { toast } from 'sonner';
 
 interface AccountFormProps {
@@ -21,11 +25,28 @@ interface AccountFormProps {
   onCancel?: () => void;
 }
 
+/** 新規作成時に同時登録する連絡先の入力値 */
+interface CreateWithContactFields {
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  contactRole: string;
+}
+
 /**
  * 企業アカウント作成/編集フォーム
- * React Hook Form + Zodバリデーション
+ * 新規作成時は会社名のみ必須。任意で担当者（連絡先）を同時登録可能。
  */
 export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormProps) {
+  const queryClient = useQueryClient();
+  const isCreate = !initialData?.id;
+  const [createContact, setCreateContact] = useState<CreateWithContactFields>({
+    contactName: '',
+    contactEmail: '',
+    contactPhone: '',
+    contactRole: '',
+  });
+
   const {
     register,
     handleSubmit,
@@ -58,7 +79,7 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
 
   const onSubmit = async (data: AccountFormData) => {
     try {
-      const isEdit = initialData?.id;
+      const isEdit = !!initialData?.id;
       const url = isEdit ? `/api/accounts/${initialData.id}` : '/api/accounts';
       const response = await fetch(url, {
         method: isEdit ? 'PATCH' : 'POST',
@@ -74,7 +95,35 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
         return;
       }
 
-      toast.success(isEdit ? '企業アカウントを更新しました' : '企業アカウントを作成しました');
+      const newAccountId = result.data?.id;
+
+      // 新規作成かつ担当者名が入力されていれば連絡先を同時作成
+      if (isCreate && newAccountId && createContact.contactName.trim()) {
+        const contactRes = await fetch('/api/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountId: newAccountId,
+            name: createContact.contactName.trim(),
+            email: createContact.contactEmail.trim() || null,
+            phone: createContact.contactPhone.trim() || null,
+            role: createContact.contactRole.trim() || null,
+            status: 'active',
+            influenceLevel: 'other',
+          }),
+        });
+        if (!contactRes.ok) {
+          const contactErr = await contactRes.json().catch(() => ({}));
+          toast.error(contactErr.error || '企業は作成されましたが、連絡先の登録に失敗しました');
+        } else {
+          queryClient.invalidateQueries({ queryKey: [CONTACTS_QUERY_KEY] });
+          toast.success('企業アカウントと担当者を登録しました');
+        }
+      } else {
+        toast.success(isEdit ? '企業アカウントを更新しました' : '企業アカウントを作成しました');
+      }
+
+      queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY] });
       onSuccess?.();
     } catch (error) {
       console.error('Error saving account:', error);
@@ -115,16 +164,11 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
               <SelectValue placeholder="業種を選択" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="IT・ソフトウェア">IT・ソフトウェア</SelectItem>
-              <SelectItem value="製造業">製造業</SelectItem>
-              <SelectItem value="商社">商社</SelectItem>
-              <SelectItem value="金融・保険">金融・保険</SelectItem>
-              <SelectItem value="小売・流通">小売・流通</SelectItem>
-              <SelectItem value="サービス業">サービス業</SelectItem>
-              <SelectItem value="建設・不動産">建設・不動産</SelectItem>
-              <SelectItem value="医療・ヘルスケア">医療・ヘルスケア</SelectItem>
-              <SelectItem value="教育">教育</SelectItem>
-              <SelectItem value="その他">その他</SelectItem>
+              {ACCOUNT_INDUSTRIES.map((ind) => (
+                <SelectItem key={ind} value={ind}>
+                  {ind}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -149,7 +193,61 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
         </div>
       </div>
 
-      {/* 連絡先情報セクション */}
+      {/* 新規作成時のみ：担当者（連絡先）を同時に登録（任意） */}
+      {isCreate && (
+        <div className="space-y-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-4">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            担当者を同時に登録（任意）
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            氏名を入力すると、この企業の連絡先として1件登録されます。
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="createContactName">担当者名</Label>
+              <Input
+                id="createContactName"
+                placeholder="例: 山田 太郎"
+                value={createContact.contactName}
+                onChange={(e) => setCreateContact((c) => ({ ...c, contactName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="createContactRole">役職</Label>
+              <Input
+                id="createContactRole"
+                placeholder="例: 営業部長"
+                value={createContact.contactRole}
+                onChange={(e) => setCreateContact((c) => ({ ...c, contactRole: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="createContactEmail">メール</Label>
+              <Input
+                id="createContactEmail"
+                type="email"
+                placeholder="example@company.com"
+                value={createContact.contactEmail}
+                onChange={(e) => setCreateContact((c) => ({ ...c, contactEmail: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="createContactPhone">電話</Label>
+              <Input
+                id="createContactPhone"
+                type="tel"
+                placeholder="03-1234-5678"
+                value={createContact.contactPhone}
+                onChange={(e) => setCreateContact((c) => ({ ...c, contactPhone: e.target.value }))}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 連絡先情報セクション（企業の連絡先＝会社の電話・メール等） */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium">連絡先情報</h3>
         
