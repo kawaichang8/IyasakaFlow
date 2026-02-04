@@ -122,17 +122,34 @@ export const accountSchema = z.object({
     .nullable(),
   
   employeeCount: z
-    .number()
-    .int('整数で入力してください')
-    .min(0, '0以上の数値を入力してください')
+    .union([
+      z.number().int('整数で入力してください').min(0, '0以上の数値を入力してください'),
+      z.literal(''),
+      z.nan(),
+      z.undefined(),
+      z.null(),
+    ])
     .optional()
-    .nullable(),
+    .nullable()
+    .transform((v) => {
+      if (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v))) return null;
+      return typeof v === 'number' ? v : null;
+    }),
   
   annualRevenue: z
-    .number()
-    .min(0, '0以上の数値を入力してください')
+    .union([
+      z.number().min(0, '0以上の数値を入力してください'),
+      z.literal(''),
+      z.nan(),
+      z.undefined(),
+      z.null(),
+    ])
     .optional()
-    .nullable(),
+    .nullable()
+    .transform((v) => {
+      if (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v))) return null;
+      return typeof v === 'number' ? v : null;
+    }),
   
   status: accountStatusSchema.default('prospect'),
   

@@ -15,25 +15,61 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
+import { useContact } from '@/hooks/use-contacts';
+import { ContactForm } from './contact-form';
+import type { ContactFormData } from '@/lib/validations/contact';
+import type { Contact } from '@/types';
 
 interface ContactDetailProps {
   contactId: string;
 }
 
+type ContactWithRelations = Contact & {
+  company?: string;
+  account?: { id: string; name: string };
+  interactions?: Array<{ id: string; type: string; date: string; note: string | null; nextAction?: string | null }>;
+  tasks?: Array<{ id: string; title: string; dueDate: string | null; priority: string; status: string }>;
+};
+
 /**
  * 連絡先詳細コンポーネント
+ * APIから実データを取得して表示
  */
 export function ContactDetail({ contactId }: ContactDetailProps) {
-  const [contact] = useState(getMockContactDetail(contactId));
+  const { data, isLoading, error } = useContact(contactId);
+  const [editing, setEditing] = useState(false);
+  const contact = data?.data as ContactWithRelations | undefined;
 
-  if (!contact) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-12">
-        <p className="text-muted-foreground">連絡先が見つかりません</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="mt-4 text-muted-foreground">読み込み中...</p>
       </div>
     );
   }
+
+  if (error || !contact) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12">
+        <p className="text-muted-foreground">連絡先が見つかりません</p>
+        <Link href="/contacts" className="mt-4 text-sm text-primary hover:underline">
+          一覧に戻る
+        </Link>
+      </div>
+    );
+  }
+
+  const accountId = contact.account?.id ?? contact.accountId;
+  const companyName = contact.company ?? contact.account?.name ?? '—';
 
   return (
     <div className="space-y-6">
@@ -53,7 +89,9 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{contact.name}</h1>
-            <p className="text-muted-foreground">{contact.role} - {contact.department}</p>
+            <p className="text-muted-foreground">
+              {[contact.role, contact.department].filter(Boolean).join(' - ') || '—'}
+            </p>
             <div className="mt-1 flex gap-2">
               <InfluenceBadge level={contact.influenceLevel} />
               <StatusBadge status={contact.status} />
@@ -61,16 +99,33 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setEditing(true)}>
             <Edit className="mr-2 h-4 w-4" />
             編集
           </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            活動を記録
+          <Button asChild>
+            <Link href={accountId ? `/activities?accountId=${accountId}&contactId=${contact.id}` : '/activities'}>
+              <Plus className="mr-2 h-4 w-4" />
+              活動を記録
+            </Link>
           </Button>
         </div>
       </div>
+
+      {/* 編集ダイアログ */}
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>連絡先を編集</DialogTitle>
+            <DialogDescription>担当者情報を変更できます</DialogDescription>
+          </DialogHeader>
+          <ContactForm
+            initialData={contactToFormData(contact)}
+            onSuccess={() => setEditing(false)}
+            onCancel={() => setEditing(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* クイックアクション */}
       <div className="flex flex-wrap gap-2">
@@ -108,19 +163,23 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
             {/* 所属企業 */}
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">所属企業</p>
-              <Link 
-                href={`/accounts/${contact.accountId}`}
-                className="flex items-center gap-2 font-medium text-primary hover:underline"
-              >
-                <Building2 className="h-4 w-4" />
-                {contact.company}
-              </Link>
+              {accountId ? (
+                <Link
+                  href={`/accounts/${accountId}`}
+                  className="flex items-center gap-2 font-medium text-primary hover:underline"
+                >
+                  <Building2 className="h-4 w-4" />
+                  {companyName}
+                </Link>
+              ) : (
+                <span className="flex items-center gap-2">{companyName}</span>
+              )}
             </div>
 
             {contact.email && (
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">メール</p>
-                <a 
+                <a
                   href={`mailto:${contact.email}`}
                   className="flex items-center gap-2 text-sm hover:text-primary"
                 >
@@ -154,10 +213,9 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
               <p className="text-sm text-muted-foreground">最終連絡日</p>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                {contact.lastContactDate 
+                {contact.lastContactDate
                   ? `${formatDate(contact.lastContactDate)} (${formatRelativeTime(contact.lastContactDate)})`
-                  : '未連絡'
-                }
+                  : '未連絡'}
               </div>
             </div>
 
@@ -177,16 +235,18 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
               <CardTitle>インタラクション履歴</CardTitle>
               <CardDescription>この連絡先との活動履歴</CardDescription>
             </div>
-            <Button size="sm" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              記録を追加
+            <Button size="sm" variant="outline" asChild>
+              <Link href={accountId ? `/activities?accountId=${accountId}&contactId=${contact.id}` : '/activities'}>
+                <Plus className="mr-2 h-4 w-4" />
+                記録を追加
+              </Link>
             </Button>
           </CardHeader>
           <CardContent>
             {contact.interactions && contact.interactions.length > 0 ? (
               <div className="space-y-4">
-                {contact.interactions.map((interaction: any) => (
-                  <div 
+                {contact.interactions.map((interaction: { id: string; type: string; date: string; note: string | null; nextAction?: string | null }) => (
+                  <div
                     key={interaction.id}
                     className="flex gap-4 border-l-2 border-primary/20 pl-4"
                   >
@@ -197,7 +257,7 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
                           {formatDate(interaction.date)}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm">{interaction.note}</p>
+                      <p className="mt-1 text-sm">{interaction.note ?? '—'}</p>
                       {interaction.nextAction && (
                         <p className="mt-2 text-sm text-muted-foreground">
                           次のアクション: {interaction.nextAction}
@@ -223,15 +283,36 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
             <CardTitle>関連タスク</CardTitle>
             <CardDescription>この連絡先に関連するタスク</CardDescription>
           </div>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            タスクを作成
+          <Button size="sm" asChild>
+            <Link href={`/tasks?openCreate=1${accountId ? `&accountId=${accountId}` : ''}`}>
+              <Plus className="mr-2 h-4 w-4" />
+              タスクを作成
+            </Link>
           </Button>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-sm text-muted-foreground">
-            タスクがありません
-          </p>
+          {contact.tasks && contact.tasks.length > 0 ? (
+            <div className="space-y-2">
+              {contact.tasks.map((task: { id: string; title: string; dueDate: string | null; priority: string; status: string }) => (
+                <Link
+                  key={task.id}
+                  href="/tasks"
+                  className="block rounded-lg border p-3 text-sm hover:bg-muted/50"
+                >
+                  <span className="font-medium">{task.title}</span>
+                  {task.dueDate && (
+                    <span className="ml-2 text-muted-foreground">
+                      — 期限: {formatDate(task.dueDate)}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              タスクがありません
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -240,7 +321,7 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
 
 function InfluenceBadge({ level }: { level?: string }) {
   if (!level) return null;
-  
+
   const config: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'info' | 'secondary' }> = {
     decision_maker: { label: '意思決定者', variant: 'success' },
     influencer: { label: '影響者', variant: 'info' },
@@ -248,9 +329,9 @@ function InfluenceBadge({ level }: { level?: string }) {
     gatekeeper: { label: 'ゲートキーパー', variant: 'warning' },
     other: { label: 'その他', variant: 'secondary' },
   };
-  
+
   const { label, variant } = config[level] || { label: level, variant: 'secondary' as const };
-  
+
   return <Badge variant={variant}>{label}</Badge>;
 }
 
@@ -285,30 +366,24 @@ function getInteractionTypeLabel(type: string): string {
   return labels[type] || type;
 }
 
-function getMockContactDetail(id: string) {
+/** contact-detail 用：API連絡先をフォーム初期値に変換（contact-list の contactToFormData と同様） */
+function contactToFormData(c: ContactWithRelations): Partial<ContactFormData> & { id: string } {
+  const accountId = c.account?.id ?? c.accountId;
   return {
-    id,
-    accountId: 'acc_1',
-    name: '田中太郎',
-    email: 'tanaka@abc.example.com',
-    phone: '03-1234-5678',
-    mobile: '090-1234-5678',
-    role: '代表取締役',
-    department: '経営',
-    company: '株式会社ABC',
-    influenceLevel: 'decision_maker',
-    status: 'active',
-    notes: '創業者。IT導入に積極的。毎週火曜日の午前中が連絡しやすい。',
-    socialProfiles: {
-      linkedin: 'https://linkedin.com/in/tanaka',
-    },
-    lastContactDate: '2024-01-20T10:00:00Z',
-    interactions: [
-      { id: 'int_1', type: 'meeting', date: '2024-01-20', note: '初回打ち合わせ。課題のヒアリングを実施。来月中に提案書を提出予定。', nextAction: '提案書作成' },
-      { id: 'int_2', type: 'email', date: '2024-01-25', note: '提案書を送付。確認後にフィードバックをいただく予定。' },
-      { id: 'int_3', type: 'call', date: '2024-01-28', note: '提案書についての質問回答。概ね好意的な反応。' },
-    ],
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-28T15:30:00Z',
+    id: c.id,
+    accountId: accountId ?? '',
+    name: c.name,
+    firstName: c.firstName ?? '',
+    lastName: c.lastName ?? '',
+    email: c.email ?? '',
+    phone: c.phone ?? '',
+    mobile: c.mobile ?? '',
+    role: c.role ?? '',
+    department: c.department ?? '',
+    company: c.company ?? c.account?.name ?? '',
+    influenceLevel: (c.influenceLevel as ContactFormData['influenceLevel']) ?? 'other',
+    status: c.status,
+    tags: c.tags ?? [],
+    notes: c.notes ?? '',
   };
 }
