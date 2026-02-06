@@ -38,9 +38,21 @@ export function stringifyCsv<T extends Record<string, unknown>>(
 }
 
 /**
- * CSV行をパース（簡易実装: ダブルクォート対応）
+ * ヘッダー名を正規化（比較用: 空白除去・全角→半角）
  */
-function parseCsvLine(line: string): string[] {
+function normalizeHeader(h: string): string {
+  return h
+    .trim()
+    .replace(/\uFEFF/g, '')
+    .replace(/\s+/g, '')
+    .replace(/，/g, ',')
+    .toLowerCase();
+}
+
+/**
+ * CSV行をパース（区切り文字指定、ダブルクォート対応）
+ */
+function parseCsvLine(line: string, separator: string = CSV_SEP): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -53,7 +65,7 @@ function parseCsvLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === CSV_SEP && !inQuotes) {
+    } else if (char === separator && !inQuotes) {
       result.push(current.trim());
       current = '';
     } else {
@@ -66,30 +78,41 @@ function parseCsvLine(line: string): string[] {
 
 /**
  * CSV文字列をオブジェクト配列にパース
+ * - 区切り文字: 1行目でカンマとセミコロンの数を比較し、多い方を採用
+ * - ヘッダー: 正規化して照合（空白除去・全角カンマ考慮）
  */
 export function parseCsv(
   csvText: string,
   columns: string[]
 ): Record<string, string>[] {
-  const normalized = csvText.replace(/^\uFEFF/, '').trim();
+  const normalized = csvText
+    .replace(/^\uFEFF/, '')
+    .replace(/，/g, ',')
+    .trim();
   const lines = normalized.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) return [];
   const firstLine = lines[0];
   if (!firstLine) return [];
-  const headerRow = parseCsvLine(firstLine);
-  const headerMap = headerRow.map((h) => h.trim().replace(/\uFEFF/g, '').toLowerCase());
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semicolonCount = (firstLine.match(/;/g) || []).length;
+  const separator = semicolonCount > commaCount ? ';' : CSV_SEP;
+  const headerRow = parseCsvLine(firstLine, separator);
+  const headerNormalized = headerRow.map((h) => normalizeHeader(h));
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
-    const values = parseCsvLine(line);
+    const values = parseCsvLine(line, separator);
     const row: Record<string, string> = {};
     columns.forEach((col) => {
       const colStr = typeof col === 'string' ? col : String(col);
-      const idx = headerMap.indexOf(colStr.toLowerCase());
-      const raw = idx >= 0 ? values[idx] : undefined;
-      if (raw !== undefined && raw !== null) {
-        row[colStr] = String(raw).replace(/^"|"$/g, '').replace(/""/g, '"');
+      const colNorm = normalizeHeader(colStr);
+      const idx = headerNormalized.indexOf(colNorm);
+      if (idx >= 0) {
+        const raw = values[idx];
+        if (raw !== undefined && raw !== null) {
+          row[colStr] = String(raw).replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+        }
       }
     });
     rows.push(row);
