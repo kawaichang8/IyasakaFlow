@@ -35,12 +35,25 @@ import { CONTACT_STATUSES } from '@/lib/validations/contact';
 import { downloadExport } from '@/lib/import-export/download';
 import { toast } from 'sonner';
 
+const CONTACT_INFLUENCE_OPTIONS = [
+  { value: 'decision_maker', label: '意思決定者' },
+  { value: 'influencer', label: '影響者' },
+  { value: 'user', label: '利用者' },
+  { value: 'gatekeeper', label: 'ゲートキーパー' },
+  { value: 'other', label: 'その他' },
+] as const;
+
 interface ContactHeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   accountId: string;
   status: string;
-  onFilterChange: (key: string, value: string | undefined) => void;
+  influenceLevel?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  onFilterChange: (key: string, value: string | number | undefined) => void;
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   onClearFilters: () => void;
   activeFilterCount: number;
 }
@@ -54,7 +67,12 @@ export function ContactHeader({
   onSearchChange,
   accountId,
   status,
+  influenceLevel = '',
+  sortBy = 'updatedAt',
+  sortOrder = 'desc',
+  limit = 10,
   onFilterChange,
+  onSortChange,
   onClearFilters,
   activeFilterCount,
 }: ContactHeaderProps) {
@@ -149,7 +167,7 @@ export function ContactHeader({
           onClear={onClearFilters}
           defaultOpen={activeFilterCount > 0}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>ステータス</Label>
               <Select
@@ -185,6 +203,64 @@ export function ContactHeader({
                       {a.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>影響力</Label>
+              <Select
+                value={influenceLevel || 'all'}
+                onValueChange={(v) => onFilterChange('influenceLevel', v === 'all' ? undefined : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="すべて" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  {CONTACT_INFLUENCE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>並び替え</Label>
+              <Select
+                value={`${sortBy}-${sortOrder}`}
+                onValueChange={(v) => {
+                  const [by, order] = v.split('-') as [string, 'asc' | 'desc'];
+                  if (onSortChange) onSortChange(by, order);
+                  else { onFilterChange('sortBy', by); onFilterChange('sortOrder', order); }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="updatedAt-desc">更新日が新しい順</SelectItem>
+                  <SelectItem value="updatedAt-asc">更新日が古い順</SelectItem>
+                  <SelectItem value="name-asc">名前あいうえお順</SelectItem>
+                  <SelectItem value="name-desc">名前逆順</SelectItem>
+                  <SelectItem value="createdAt-desc">登録日が新しい順</SelectItem>
+                  <SelectItem value="createdAt-asc">登録日が古い順</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>表示件数</Label>
+              <Select
+                value={String(limit)}
+                onValueChange={(v) => onFilterChange('limit', parseInt(v, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10件</SelectItem>
+                  <SelectItem value="20">20件</SelectItem>
+                  <SelectItem value="50">50件</SelectItem>
                 </SelectContent>
               </Select>
             </div>

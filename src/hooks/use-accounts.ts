@@ -24,6 +24,7 @@ export function useAccounts(params?: QueryParams) {
       if (params?.industry) searchParams.set('industry', params.industry);
       if (params?.accountType) searchParams.set('accountType', params.accountType);
       if (params?.status) searchParams.set('status', params.status);
+      if (params?.needFollowUp) searchParams.set('needFollowUp', params.needFollowUp);
       if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
       if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
       

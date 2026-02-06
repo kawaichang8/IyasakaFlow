@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const industry = searchParams.get('industry') || '';
     const accountType = searchParams.get('accountType') || '';
     const status = searchParams.get('status') || '';
+    const needFollowUp = searchParams.get('needFollowUp') === '1' || searchParams.get('needFollowUp') === 'true';
     const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     
@@ -41,6 +42,19 @@ export async function GET(request: NextRequest) {
     }
     if (status) {
       where.status = status as any;
+    }
+    
+    // 要フォロー: 7日以上連絡していない企業に絞る
+    if (needFollowUp) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const recent = await prisma.interaction.findMany({
+        where: { date: { gte: sevenDaysAgo }, accountId: { not: null } },
+        select: { accountId: true },
+        distinct: ['accountId'],
+      });
+      const recentAccountIds = recent.map((r) => r.accountId).filter((id): id is string => id != null);
+      where.id = recentAccountIds.length > 0 ? { notIn: recentAccountIds } : undefined;
     }
     
     // 総件数を取得

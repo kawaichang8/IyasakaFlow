@@ -9,6 +9,7 @@ type ContactFilters = {
   search?: string;
   accountId?: string;
   status?: string;
+  influenceLevel?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -27,19 +28,20 @@ function PageFallback() {
  * 連絡先一覧ページ（useSearchParams 利用のため Suspense 内で表示）
  */
 function ContactsPageContent() {
-  const { get, getNumber, setOne, clear } = useSearchParamsState<ContactFilters>();
+  const { get, getNumber, setOne, set, clear } = useSearchParamsState<ContactFilters>();
 
   const params = useMemo<ContactFilters>(() => ({
     search: get('search'),
     accountId: get('accountId'),
     status: get('status'),
+    influenceLevel: get('influenceLevel'),
     page: getNumber('page') ?? 1,
-    limit: 10,
+    limit: getNumber('limit') || 10,
     sortBy: get('sortBy') || 'updatedAt',
-    sortOrder: get('sortOrder') || 'desc',
+    sortOrder: (get('sortOrder') as 'asc' | 'desc') || 'desc',
   }), [get, getNumber]);
 
-  const activeFilterCount = [get('accountId'), get('status')].filter(Boolean).length;
+  const activeFilterCount = [get('accountId'), get('status'), get('influenceLevel')].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
@@ -48,7 +50,12 @@ function ContactsPageContent() {
         onSearchChange={(v) => setOne('search', v || undefined)}
         accountId={get('accountId') ?? ''}
         status={get('status') ?? ''}
+        influenceLevel={get('influenceLevel') ?? ''}
+        sortBy={get('sortBy') || 'updatedAt'}
+        sortOrder={(get('sortOrder') as 'asc' | 'desc') || 'desc'}
+        limit={getNumber('limit') || 10}
         onFilterChange={(key, value) => setOne(key as keyof ContactFilters, value)}
+        onSortChange={(sortBy, sortOrder) => set({ sortBy, sortOrder })}
         onClearFilters={clear}
         activeFilterCount={activeFilterCount}
       />

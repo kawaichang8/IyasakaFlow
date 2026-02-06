@@ -40,7 +40,12 @@ interface AccountHeaderProps {
   industry: string;
   accountType: string;
   status: string;
-  onFilterChange: (key: string, value: string | undefined) => void;
+  needFollowUp?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  onFilterChange: (key: string, value: string | number | undefined) => void;
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   onClearFilters: () => void;
   activeFilterCount: number;
 }
@@ -55,7 +60,12 @@ export function AccountHeader({
   industry,
   accountType,
   status,
+  needFollowUp = '',
+  sortBy = 'updatedAt',
+  sortOrder = 'desc',
+  limit = 10,
   onFilterChange,
+  onSortChange,
   onClearFilters,
   activeFilterCount,
 }: AccountHeaderProps) {
@@ -149,7 +159,7 @@ export function AccountHeader({
           onClear={onClearFilters}
           defaultOpen={activeFilterCount > 0}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>ステータス</Label>
               <Select
@@ -204,6 +214,60 @@ export function AccountHeader({
                       {ind}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>条件</Label>
+              <Select
+                value={needFollowUp || 'all'}
+                onValueChange={(v) => onFilterChange('needFollowUp', v === 'all' ? undefined : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="すべて" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  <SelectItem value="1">要フォロー（7日以上連絡なし）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>並び替え</Label>
+              <Select
+                value={`${sortBy}-${sortOrder}`}
+                onValueChange={(v) => {
+                  const [by, order] = v.split('-') as [string, 'asc' | 'desc'];
+                  if (onSortChange) onSortChange(by, order);
+                  else { onFilterChange('sortBy', by); onFilterChange('sortOrder', order); }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="updatedAt-desc">更新日が新しい順</SelectItem>
+                  <SelectItem value="updatedAt-asc">更新日が古い順</SelectItem>
+                  <SelectItem value="name-asc">会社名あいうえお順</SelectItem>
+                  <SelectItem value="name-desc">会社名逆順</SelectItem>
+                  <SelectItem value="createdAt-desc">登録日が新しい順</SelectItem>
+                  <SelectItem value="createdAt-asc">登録日が古い順</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>表示件数</Label>
+              <Select
+                value={String(limit)}
+                onValueChange={(v) => onFilterChange('limit', parseInt(v, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10件</SelectItem>
+                  <SelectItem value="20">20件</SelectItem>
+                  <SelectItem value="50">50件</SelectItem>
                 </SelectContent>
               </Select>
             </div>

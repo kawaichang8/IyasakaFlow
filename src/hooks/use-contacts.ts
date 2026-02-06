@@ -23,6 +23,7 @@ export function useContacts(params?: QueryParams) {
       if (params?.search) searchParams.set('search', params.search);
       if (params?.accountId) searchParams.set('accountId', params.accountId);
       if (params?.status) searchParams.set('status', params.status);
+      if (params?.influenceLevel) searchParams.set('influenceLevel', params.influenceLevel);
       if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
       if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
 
