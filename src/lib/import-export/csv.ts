@@ -77,6 +77,35 @@ function parseCsvLine(line: string, separator: string = CSV_SEP): string[] {
 }
 
 /**
+ * CSV文字列を「論理行」に分割（引用符内の改行は行区切りにしない）
+ */
+function splitCsvIntoRows(text: string): string[] {
+  const rows: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === CSV_QUOTE) {
+      if (inQuotes && text[i + 1] === CSV_QUOTE) {
+        current += CSV_QUOTE;
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      current += char;
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && text[i + 1] === '\n') i++;
+      if (current.trim()) rows.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) rows.push(current.trim());
+  return rows;
+}
+
+/**
  * CSV文字列をオブジェクト配列にパース
  * - 区切り文字: 1行目でカンマ・セミコロン・タブの数を比較し、多い方を採用
  * - ヘッダー: 正規化して照合（空白除去・全角カンマ考慮）
@@ -102,7 +131,7 @@ export function parseCsv(
     .replace(/^\uFEFF/, '')
     .replace(/，/g, ',')
     .trim();
-  const lines = normalized.split(/\r?\n/).filter((line) => line.trim());
+  const lines = splitCsvIntoRows(normalized);
   if (lines.length < 2) {
     return opts?.returnHeaders ? { rows: [], headerRow: [] } : [];
   }
