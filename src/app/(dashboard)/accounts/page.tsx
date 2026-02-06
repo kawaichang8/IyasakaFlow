@@ -55,7 +55,7 @@ function AccountsPageContent() {
         onClearFilters={clear}
         activeFilterCount={activeFilterCount}
       />
-      <AccountList params={params} />
+      <AccountList params={params} onPageChange={(page) => setOne('page', page)} />
     </div>
   );
 }

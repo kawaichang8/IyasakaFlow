@@ -10,6 +10,8 @@ import {
   ExternalLink,
   Mail,
   Phone,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,17 +68,19 @@ function accountToFormData(account: Account): Partial<AccountFormData> & { id: s
 
 interface AccountListProps {
   params?: { search?: string; industry?: string; accountType?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
+  onPageChange?: (page: number) => void;
 }
 
 /**
  * 企業アカウント一覧コンポーネント
  * テーブル/カード表示、検索・フィルターはURL連携
  */
-export function AccountList({ params }: AccountListProps) {
+export function AccountList({ params, onPageChange }: AccountListProps) {
   const { data, isLoading, error } = useAccounts(params as QueryParams | undefined);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [editingAccount, setEditingAccount] = useState<AccountWithCounts | null>(null);
   const accounts = (data?.data ?? []) as AccountWithCounts[];
+  const pagination = data?.pagination;
 
   if (error) {
     return (
@@ -199,6 +203,38 @@ export function AccountList({ params }: AccountListProps) {
               onEdit={() => setEditingAccount(account)}
             />
           ))}
+        </div>
+      )}
+
+      {/* ページ送り */}
+      {pagination && pagination.totalPages > 1 && onPageChange && (
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)}件 / 全{pagination.total}件
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              前へ
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {pagination.page} / {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              次へ
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

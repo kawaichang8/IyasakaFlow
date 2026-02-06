@@ -8,6 +8,8 @@ import {
   Mail,
   Phone,
   Building2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +60,7 @@ function contactToFormData(contact: Contact & { account?: { id: string; name: st
 
 interface ContactListProps {
   params?: { search?: string; accountId?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
+  onPageChange?: (page: number) => void;
 }
 
 /**
@@ -66,12 +69,13 @@ interface ContactListProps {
  */
 type ContactWithAccount = Contact & { account?: { id: string; name: string } };
 
-export function ContactList({ params }: ContactListProps) {
+export function ContactList({ params, onPageChange }: ContactListProps) {
   const { data, isLoading, error } = useContacts(params as QueryParams | undefined);
   const deleteMutation = useDeleteContact();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
   const contacts = (data?.data ?? []) as ContactWithAccount[];
+  const pagination = data?.pagination;
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`「${name}」を削除してもよろしいですか？`)) return;
@@ -194,6 +198,38 @@ export function ContactList({ params }: ContactListProps) {
               onDelete={() => handleDelete(contact.id, contact.name)}
             />
           ))}
+        </div>
+      )}
+
+      {/* ページ送り */}
+      {pagination && pagination.totalPages > 1 && onPageChange && (
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)}件 / 全{pagination.total}件
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              前へ
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {pagination.page} / {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              次へ
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

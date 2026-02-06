@@ -52,7 +52,7 @@ function ContactsPageContent() {
         onClearFilters={clear}
         activeFilterCount={activeFilterCount}
       />
-      <ContactList params={params} />
+      <ContactList params={params} onPageChange={(page) => setOne('page', page)} />
     </div>
   );
 }
