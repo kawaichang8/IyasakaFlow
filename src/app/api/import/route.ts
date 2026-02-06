@@ -16,20 +16,20 @@ const CSV_HEADER_KEYS = {
   deals: EXPORT_COLUMNS.deals.map((c) => c.header),
 };
 
-// 企業アカウントインポートで受け付ける列の別名（会社名/企業名・英語含む）
+// 企業アカウントインポートで受け付ける列の別名（会社名/企業名・宛名・英語含む）
 const ACCOUNT_IMPORT_COLUMNS = [
-  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', 'Company', 'company',
-  '業種', 'Webサイト', '電話番号', 'メール', 'メールアドレス', '住所', '市区町村', '都道府県', '郵便番号', '国',
-  '従業員数', '年間売上', 'ステータス', '説明', 'タグ',
+  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company',
+  '業種', 'Webサイト', '電話番号', '電話', 'メール', 'メールアドレス', '住所', '住所２', '市区町村', '都道府県', '郵便番号', '〒', '国',
+  '従業員数', '年間売上', 'ステータス', '説明', '備考', 'タグ',
   'Email', 'email', 'Phone', 'phone',
 ];
 
-// 連絡先インポートで受け付ける列の別名（会社名/氏名・英語含む）
+// 連絡先インポートで受け付ける列の別名（企業名・名前・住所・電話・メールなど）
 const CONTACT_IMPORT_COLUMNS = [
-  '企業名', '会社名', '企業', '会社', '組織名', '組織', '取引先', 'Company', 'company',
+  '企業名', '会社名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company',
   '名前', '氏名', '担当者名', '連絡先名', '担当者', '連絡先', 'Name', 'name', 'Contact', 'contact',
-  '名', '姓', 'メール', 'メールアドレス', '電話番号', '携帯', '役職', '部署',
-  '影響力レベル', 'ステータス', 'メモ', 'タグ',
+  '名', '姓', 'メール', 'メールアドレス', '電話番号', '電話', '携帯', '役職', '部署',
+  '住所', '住所２', '〒', '影響力レベル', 'ステータス', 'メモ', '備考', 'タグ',
   'Email', 'email', 'Phone', 'phone',
 ];
 
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         const row = rows[i];
         if (!row) continue;
         const name = toStr(
-          row['会社名'] ?? row['企業名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['Company'] ?? row['company']
+          row['会社名'] ?? row['企業名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['宛名'] ?? row['Company'] ?? row['company']
         );
         if (!name) {
           const baseMsg = '会社名（または企業名）がありません。CSVの1行目に「会社名」または「企業名」の列があるか確認してください。';
@@ -150,12 +150,12 @@ export async function POST(request: NextRequest) {
             name,
             industry: toStr(row['業種']) || undefined,
             website: toStr(row['Webサイト']) || undefined,
-            phone: toStr(row['電話番号'] ?? row['Phone'] ?? row['phone']) || undefined,
+            phone: toStr(row['電話番号'] ?? row['電話'] ?? row['Phone'] ?? row['phone']) || undefined,
             email: toStr(row['メール'] ?? row['メールアドレス'] ?? row['Email'] ?? row['email']) || undefined,
-            address: toStr(row['住所']) || undefined,
+            address: toStr(row['住所'] ?? row['住所２']) || undefined,
             city: toStr(row['市区町村']) || undefined,
             state: toStr(row['都道府県']) || undefined,
-            postalCode: toStr(row['郵便番号']) || undefined,
+            postalCode: toStr(row['郵便番号'] ?? row['〒']) || undefined,
             country: toStr(row['国']) || '日本',
             employeeCount: toNum(row['従業員数']),
             annualRevenue: toNum(row['年間売上']),
@@ -199,10 +199,10 @@ export async function POST(request: NextRequest) {
           row['企業名'] ?? row['会社名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['Company'] ?? row['company']
         );
         const name = toStr(
-          row['名前'] ?? row['氏名'] ?? row['担当者名'] ?? row['連絡先名'] ?? row['担当者'] ?? row['連絡先'] ?? row['Name'] ?? row['name'] ?? row['Contact'] ?? row['contact']
+          row['名前'] ?? row['氏名'] ?? row['担当者名'] ?? row['連絡先名'] ?? row['担当者'] ?? row['連絡先'] ?? row['宛名'] ?? row['Name'] ?? row['name'] ?? row['Contact'] ?? row['contact']
         );
         if (!accountName || !name) {
-          const baseMsg = '企業名（または会社名）と名前（または氏名・担当者名）は必須です。CSVの1行目に「企業名」「名前」または「会社名」「氏名」などの列があるか確認してください。';
+          const baseMsg = '企業名（または会社名）と名前（または氏名・担当者名・宛名）は必須です。CSVの1行目に「企業名」「名前」または「会社名」「氏名」「宛名」などの列があるか確認してください。';
           const isFirstRequiredError = !results.errors.some((e) => e.message.includes('必須です'));
           const hint = isFirstRequiredError && contactHeaderRow.length > 0
             ? ` 検出した1行目の列: [${contactHeaderRow.join(', ')}]`
@@ -231,13 +231,13 @@ export async function POST(request: NextRequest) {
             firstName: toStr(row['名']) || undefined,
             lastName: toStr(row['姓']) || undefined,
             email: toStr(row['メール'] ?? row['メールアドレス'] ?? row['Email'] ?? row['email']) || undefined,
-            phone: toStr(row['電話番号'] ?? row['Phone'] ?? row['phone']) || undefined,
+            phone: toStr(row['電話番号'] ?? row['電話'] ?? row['Phone'] ?? row['phone']) || undefined,
             mobile: toStr(row['携帯']) || undefined,
             role: toStr(row['役職']) || undefined,
             department: toStr(row['部署']) || undefined,
             influenceLevel: ['decision_maker', 'influencer', 'user', 'gatekeeper', 'other'].includes(influenceLevel) ? influenceLevel : 'other',
             status: ['active', 'inactive', 'bounced'].includes(status) ? status : 'active',
-            notes: toStr(row['メモ']) || undefined,
+            notes: toStr(row['メモ'] ?? row['備考']) || undefined,
             tags: toStr(row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
           };
           contactSchema.parse(data);
