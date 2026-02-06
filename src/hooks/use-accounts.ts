@@ -30,7 +30,9 @@ export function useAccounts(params?: QueryParams) {
       const response = await fetch(`/api/accounts?${searchParams.toString()}`);
       
       if (!response.ok) {
-        throw new Error('アカウントの取得に失敗しました');
+        const body = await response.json().catch(() => ({}));
+        const message = typeof body?.error === 'string' ? body.error : 'アカウントの取得に失敗しました';
+        throw new Error(message);
       }
       
       return response.json();

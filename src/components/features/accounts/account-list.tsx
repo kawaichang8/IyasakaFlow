@@ -80,8 +80,8 @@ export function AccountList({ params }: AccountListProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-center text-destructive">
-        データの取得に失敗しました
+      <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-center text-destructive whitespace-pre-wrap">
+        {error instanceof Error ? error.message : 'データの取得に失敗しました'}
       </div>
     );
   }

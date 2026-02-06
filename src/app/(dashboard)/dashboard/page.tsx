@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useDashboard } from '@/hooks/use-dashboard';
@@ -22,6 +22,13 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, Lightbulb, ArrowRight } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
 
+const TIPS = [
+  { text: '活動を記録するときは「結果」と「次のアクション」を書くと、翌日から何をすべきか明確になります。', link: '/activities', label: '活動を記録' },
+  { text: 'パイプラインの案件をドラッグ＆ドロップでステージ移動できます。成約したら「成約」に移動しましょう。', link: '/deals', label: 'パイプラインを見る' },
+  { text: '7日以上連絡していない企業は「要フォロー」に表示されます。こまめにフォローすると成約率が上がります。', link: '/accounts', label: '企業一覧' },
+  { text: 'メール送信前にテンプレートを使うと、初心者でも安心して送れます。', link: '/emails', label: 'メール・テンプレート' },
+];
+
 /**
  * ダッシュボードページ
  * 営業活動の概要をKPI、グラフ、最近の活動で表示
@@ -30,14 +37,22 @@ export default function DashboardPage() {
   const { user } = useCurrentUser();
   const { data, isLoading, error, refetch } = useDashboard();
   const updateTaskStatus = useUpdateTaskStatus();
+  const [mounted, setMounted] = useState(false);
 
-  // 現在の時間帯に応じた挨拶
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'おはようございます';
-    if (hour < 18) return 'こんにちは';
-    return 'こんばんは';
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 現在の時間帯に応じた挨拶（クライアントのみで計算し、ハイドレーション不一致を防ぐ）
+  const greeting = !mounted
+    ? 'こんにちは'
+    : (() => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'おはようございます';
+        if (hour < 18) return 'こんにちは';
+        return 'こんばんは';
+      })();
+  const todayTip = TIPS[mounted ? new Date().getDate() % TIPS.length : 0];
 
   // タスク完了ハンドラー
   const handleTaskComplete = useCallback(async (taskId: string) => {
@@ -55,7 +70,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">ダッシュボード</h1>
           <p className="text-muted-foreground">
-            {getGreeting()}、{user?.name || 'ゲスト'}さん
+            {greeting}、{user?.name || 'ゲスト'}さん
           </p>
         </div>
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-center text-destructive">
@@ -67,13 +82,6 @@ export default function DashboardPage() {
 
   const dashboardData = data?.data;
   const needToFollowUp = dashboardData?.needToFollowUp ?? [];
-  const tips = [
-    { text: '活動を記録するときは「結果」と「次のアクション」を書くと、翌日から何をすべきか明確になります。', link: '/activities', label: '活動を記録' },
-    { text: 'パイプラインの案件をドラッグ＆ドロップでステージ移動できます。成約したら「成約」に移動しましょう。', link: '/deals', label: 'パイプラインを見る' },
-    { text: '7日以上連絡していない企業は「要フォロー」に表示されます。こまめにフォローすると成約率が上がります。', link: '/accounts', label: '企業一覧' },
-    { text: 'メール送信前にテンプレートを使うと、初心者でも安心して送れます。', link: '/emails', label: 'メール・テンプレート' },
-  ];
-  const todayTip = tips[new Date().getDate() % tips.length];
 
   return (
     <div className="space-y-6">
@@ -81,7 +89,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">ダッシュボード</h1>
         <p className="text-muted-foreground">
-          {getGreeting()}、{user?.name || 'ゲスト'}さん
+          {greeting}、{user?.name || 'ゲスト'}さん
         </p>
       </div>
 
