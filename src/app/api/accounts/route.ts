@@ -145,8 +145,23 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching accounts:', error);
+    const message = error instanceof Error ? error.message : '';
+    const isSchemaError =
+      typeof message === 'string' &&
+      (message.includes('column') ||
+        message.includes('does not exist') ||
+        message.includes('Unknown arg') ||
+        (error as { code?: string })?.code === 'P2010');
+    if (isSchemaError) {
+      return NextResponse.json(
+        {
+          error: 'データベースのスキーマがアプリと一致していません。本番環境で「npx prisma db push」を実行してマイグレーションを適用してください。',
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: 'アカウントの取得に失敗しました' },
       { status: 500 }

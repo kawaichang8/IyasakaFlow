@@ -23,11 +23,13 @@ const ACCOUNT_IMPORT_COLUMNS = [
   '従業員数', '年間売上', 'ステータス', '説明', 'タグ',
 ];
 
-// 連絡先インポートで受け付ける列の別名（会社名/氏名など）
+// 連絡先インポートで受け付ける列の別名（会社名/氏名・英語含む）
 const CONTACT_IMPORT_COLUMNS = [
-  '企業名', '会社名', '名前', '氏名', '担当者名', '連絡先名',
-  '名', '姓', 'メール', '電話番号', '携帯', '役職', '部署',
+  '企業名', '会社名', '企業', '会社', '組織名', '組織', '取引先', 'Company', 'company',
+  '名前', '氏名', '担当者名', '連絡先名', '担当者', '連絡先', 'Name', 'name', 'Contact', 'contact',
+  '名', '姓', 'メール', 'メールアドレス', '電話番号', '携帯', '役職', '部署',
   '影響力レベル', 'ステータス', 'メモ', 'タグ',
+  'Email', 'email', 'Phone', 'phone',
 ];
 
 function toStr(v: unknown): string {
@@ -68,13 +70,20 @@ export async function POST(request: NextRequest) {
     const isCsv = file.name.toLowerCase().endsWith('.csv');
     let rows: Record<string, string>[];
 
+    let contactHeaderRow: string[] = [];
     if (isCsv) {
       // CSV: 企業は「企業名」、連絡先は「会社名」「氏名」など別名も受け付ける
       const columns =
         type === 'accounts' ? ACCOUNT_IMPORT_COLUMNS :
         type === 'contacts' ? CONTACT_IMPORT_COLUMNS :
         CSV_HEADER_KEYS[type];
-      rows = parseCsv(raw, columns);
+      if (type === 'contacts') {
+        const parsed = parseCsv(raw, columns, { returnHeaders: true });
+        rows = parsed.rows;
+        contactHeaderRow = parsed.headerRow;
+      } else {
+        rows = parseCsv(raw, columns);
+      }
     } else {
       // JSON: { data: [...] } または [...]
       try {
@@ -173,12 +182,21 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row) continue;
-        const accountName = toStr(row['企業名'] ?? row['会社名']);
-        const name = toStr(row['名前'] ?? row['氏名'] ?? row['担当者名'] ?? row['連絡先名']);
+        const accountName = toStr(
+          row['企業名'] ?? row['会社名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['Company'] ?? row['company']
+        );
+        const name = toStr(
+          row['名前'] ?? row['氏名'] ?? row['担当者名'] ?? row['連絡先名'] ?? row['担当者'] ?? row['連絡先'] ?? row['Name'] ?? row['name'] ?? row['Contact'] ?? row['contact']
+        );
         if (!accountName || !name) {
+          const baseMsg = '企業名（または会社名）と名前（または氏名・担当者名）は必須です。CSVの1行目に「企業名」「名前」または「会社名」「氏名」などの列があるか確認してください。';
+          const isFirstRequiredError = !results.errors.some((e) => e.message.includes('必須です'));
+          const hint = isFirstRequiredError && contactHeaderRow.length > 0
+            ? ` 検出した1行目の列: [${contactHeaderRow.join(', ')}]`
+            : '';
           results.errors.push({
             row: i + 1,
-            message: '企業名（または会社名）と名前（または氏名・担当者名）は必須です。CSVの1行目に「企業名」「名前」または「会社名」「氏名」などの列があるか確認してください。',
+            message: baseMsg + hint,
           });
           results.skipped++;
           continue;
@@ -199,8 +217,8 @@ export async function POST(request: NextRequest) {
             name,
             firstName: toStr(row['名']) || undefined,
             lastName: toStr(row['姓']) || undefined,
-            email: toStr(row['メール']) || undefined,
-            phone: toStr(row['電話番号']) || undefined,
+            email: toStr(row['メール'] ?? row['メールアドレス'] ?? row['Email'] ?? row['email']) || undefined,
+            phone: toStr(row['電話番号'] ?? row['Phone'] ?? row['phone']) || undefined,
             mobile: toStr(row['携帯']) || undefined,
             role: toStr(row['役職']) || undefined,
             department: toStr(row['部署']) || undefined,

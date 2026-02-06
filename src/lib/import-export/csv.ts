@@ -78,24 +78,44 @@ function parseCsvLine(line: string, separator: string = CSV_SEP): string[] {
 
 /**
  * CSV文字列をオブジェクト配列にパース
- * - 区切り文字: 1行目でカンマとセミコロンの数を比較し、多い方を採用
+ * - 区切り文字: 1行目でカンマ・セミコロン・タブの数を比較し、多い方を採用
  * - ヘッダー: 正規化して照合（空白除去・全角カンマ考慮）
+ * - 戻り値: { rows, headerRow } でヘッダー行も返す（エラー表示用）
  */
 export function parseCsv(
   csvText: string,
   columns: string[]
-): Record<string, string>[] {
+): Record<string, string>[];
+
+export function parseCsv(
+  csvText: string,
+  columns: string[],
+  opts: { returnHeaders: true }
+): { rows: Record<string, string>[]; headerRow: string[] };
+
+export function parseCsv(
+  csvText: string,
+  columns: string[],
+  opts?: { returnHeaders?: boolean }
+): Record<string, string>[] | { rows: Record<string, string>[]; headerRow: string[] } {
   const normalized = csvText
     .replace(/^\uFEFF/, '')
     .replace(/，/g, ',')
     .trim();
   const lines = normalized.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) return [];
+  if (lines.length < 2) {
+    return opts?.returnHeaders ? { rows: [], headerRow: [] } : [];
+  }
   const firstLine = lines[0];
-  if (!firstLine) return [];
+  if (!firstLine) {
+    return opts?.returnHeaders ? { rows: [], headerRow: [] } : [];
+  }
   const commaCount = (firstLine.match(/,/g) || []).length;
   const semicolonCount = (firstLine.match(/;/g) || []).length;
-  const separator = semicolonCount > commaCount ? ';' : CSV_SEP;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+  const separator =
+    tabCount > commaCount && tabCount > semicolonCount ? '\t' :
+    semicolonCount > commaCount ? ';' : CSV_SEP;
   const headerRow = parseCsvLine(firstLine, separator);
   const headerNormalized = headerRow.map((h) => normalizeHeader(h));
   const rows: Record<string, string>[] = [];
@@ -116,6 +136,9 @@ export function parseCsv(
       }
     });
     rows.push(row);
+  }
+  if (opts?.returnHeaders) {
+    return { rows, headerRow };
   }
   return rows;
 }
