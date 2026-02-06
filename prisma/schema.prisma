@@ -147,6 +147,9 @@ model Account {
   employeeCount   Int?
   annualRevenue   BigInt?       // 年間売上（円）
   
+  // 取引先種別（顧客・下請け・外注・フリーランス等）
+  accountType     AccountType?
+  
   // ステータス
   status          AccountStatus @default(PROSPECT)
   
@@ -180,17 +183,33 @@ model Account {
 
   @@index([name])
   @@index([industry])
+  @@index([accountType])
   @@index([status])
   @@index([ownerId])
   @@map("accounts")
 }
 
+/// 取引先種別（顧客・下請け・外注・フリーランス等）
+enum AccountType {
+  CUSTOMER       // 顧客
+  PROSPECT       // 見込み
+  SUBCONTRACTOR  // 下請け
+  OUTSOURCE      // 外注先
+  FREELANCER     // フリーランス・個人事業主
+  PARTNER        // パートナー
+  OTHER          // その他
+}
+
 /// アカウントステータス
 enum AccountStatus {
   PROSPECT    // 見込み客
+  TRIAL       // トライアル中
+  CUSTOMER    // 顧客（契約中）
   ACTIVE      // アクティブ
   INACTIVE    // 非アクティブ
+  SUSPENDED   // 一時停止
   CHURNED     // 離脱
+  PARTNER     // パートナー
 }
 
 /// 連絡先（担当者）
@@ -266,9 +285,12 @@ enum InfluenceLevel {
 
 /// 連絡先ステータス
 enum ContactStatus {
-  ACTIVE    // アクティブ
-  INACTIVE  // 非アクティブ
-  BOUNCED   // メール不達
+  ACTIVE         // アクティブ
+  INACTIVE       // 非アクティブ
+  LEFT           // 退職
+  DO_NOT_CONTACT // 連絡不可
+  OPTED_OUT      // 配信停止
+  BOUNCED        // メール不達
 }
 
 // ==============================================
@@ -327,9 +349,13 @@ model Deal {
 /// 取引ステージ
 enum DealStage {
   LEAD          // リード
+  DISCOVERY     // ヒアリング・発見
   QUALIFIED     // 見込み評価済み
+  DEMO          // デモ
   PROPOSAL      // 提案
+  QUOTE         // 見積
   NEGOTIATION   // 交渉
+  ON_HOLD       // 保留
   CLOSED_WON    // 成約
   CLOSED_LOST   // 失注
 }
@@ -450,6 +476,9 @@ enum TaskPriority {
 enum TaskStatus {
   PENDING      // 未着手
   IN_PROGRESS  // 進行中
+  DEFERRED     // 延期
+  BLOCKED      // ブロック中
+  IN_REVIEW    // レビュー中
   COMPLETED    // 完了
   CANCELLED    // キャンセル
 }

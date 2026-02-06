@@ -21,6 +21,11 @@ export function useAccounts(params?: QueryParams) {
       if (params?.page) searchParams.set('page', String(params.page));
       if (params?.limit) searchParams.set('limit', String(params.limit));
       if (params?.search) searchParams.set('search', params.search);
+      if (params?.industry) searchParams.set('industry', params.industry);
+      if (params?.accountType) searchParams.set('accountType', params.accountType);
+      if (params?.status) searchParams.set('status', params.status);
+      if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
+      if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
       
       const response = await fetch(`/api/accounts?${searchParams.toString()}`);
       

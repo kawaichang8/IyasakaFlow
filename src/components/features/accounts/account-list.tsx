@@ -29,9 +29,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import { useAccounts } from '@/hooks/use-accounts';
 import { AccountForm } from './account-form';
+import { ACCOUNT_TYPES } from '@/lib/validations/account';
 import type { AccountFormData } from '@/lib/validations/account';
 import type { Account, QueryParams } from '@/types';
 
@@ -56,6 +57,7 @@ function accountToFormData(account: Account): Partial<AccountFormData> & { id: s
     country: account.country ?? '日本',
     employeeCount: account.employeeCount ?? undefined,
     annualRevenue: account.annualRevenue ?? undefined,
+    accountType: account.accountType ?? undefined,
     status: account.status,
     description: account.description ?? '',
     tags: account.tags ?? [],
@@ -63,7 +65,7 @@ function accountToFormData(account: Account): Partial<AccountFormData> & { id: s
 }
 
 interface AccountListProps {
-  params?: { search?: string; industry?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
+  params?: { search?: string; industry?: string; accountType?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
 }
 
 /**
@@ -156,7 +158,11 @@ export function AccountList({ params }: AccountListProps) {
               <tr className="border-b bg-muted/50">
                 <th className="px-4 py-3 text-left text-sm font-medium">会社名</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">業種</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">種別</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">ステータス</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium xl:table-cell">最終連絡</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium xl:table-cell">反応</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium xl:table-cell">ネクストアクション</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium sm:table-cell">連絡先数</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">取引総額</th>
                 <th className="px-4 py-3 text-right text-sm font-medium">操作</th>
@@ -224,8 +230,22 @@ function AccountTableRow({ account, onEdit }: { account: AccountWithCounts; onEd
       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
         {account.industry || '-'}
       </td>
+      <td className="hidden px-4 py-3 text-sm text-muted-foreground lg:table-cell">
+        {account.accountType ? ACCOUNT_TYPES.find((t) => t.value === account.accountType)?.label ?? account.accountType : '-'}
+      </td>
       <td className="hidden px-4 py-3 lg:table-cell">
         <StatusBadge status={account.status} />
+      </td>
+      <td className="hidden px-4 py-3 text-sm text-muted-foreground xl:table-cell" title={account.lastActivityAt ? formatDate(account.lastActivityAt) : undefined}>
+        {account.lastActivityAt ? formatRelativeTime(account.lastActivityAt) : '—'}
+      </td>
+      <td className="hidden max-w-[120px] truncate px-4 py-3 text-sm xl:table-cell" title={account.lastOutcome ?? undefined}>
+        {account.lastOutcome ? <span className="text-muted-foreground">{account.lastOutcome}</span> : '—'}
+      </td>
+      <td className="hidden max-w-[140px] truncate px-4 py-3 text-sm xl:table-cell" title={account.nextAction ?? undefined}>
+        {account.nextAction ? (
+          <span className="font-medium text-primary">{account.nextAction}</span>
+        ) : '—'}
       </td>
       <td className="hidden px-4 py-3 sm:table-cell">
         <div className="flex items-center gap-1 text-sm">
@@ -258,6 +278,11 @@ function AccountCard({ account, onEdit }: { account: Account & { contactCount?: 
             <div>
               <h3 className="font-semibold hover:underline">{account.name}</h3>
               <p className="text-sm text-muted-foreground">{account.industry || '業種未設定'}</p>
+              {account.accountType && (
+                <p className="text-xs text-muted-foreground">
+                  {ACCOUNT_TYPES.find((t) => t.value === account.accountType)?.label ?? account.accountType}
+                </p>
+              )}
             </div>
           </Link>
           <AccountActions account={account} onEdit={onEdit} />
@@ -266,6 +291,20 @@ function AccountCard({ account, onEdit }: { account: Account & { contactCount?: 
         <div className="mt-4 flex items-center gap-4 text-sm">
           <StatusBadge status={account.status} />
         </div>
+
+        {(account.lastActivityAt || account.lastOutcome || account.nextAction) && (
+          <div className="mt-3 space-y-1 rounded-md border border-dashed border-muted-foreground/30 bg-muted/20 px-3 py-2 text-xs">
+            {account.lastActivityAt && (
+              <p className="text-muted-foreground">最終連絡: {formatRelativeTime(account.lastActivityAt)}</p>
+            )}
+            {account.lastOutcome && (
+              <p className="truncate text-muted-foreground" title={account.lastOutcome}>反応: {account.lastOutcome}</p>
+            )}
+            {account.nextAction && (
+              <p className="font-medium text-primary" title={account.nextAction}>次: {account.nextAction}</p>
+            )}
+          </div>
+        )}
 
         <div className="mt-4 grid grid-cols-2 gap-4 border-t pt-4">
           <div className="flex items-center gap-2">
@@ -307,15 +346,23 @@ function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, 'default' | 'success' | 'warning' | 'secondary'> = {
     active: 'success',
     prospect: 'warning',
+    trial: 'warning',
+    customer: 'success',
     inactive: 'secondary',
+    suspended: 'secondary',
     churned: 'secondary',
+    partner: 'default',
   };
 
   const labels: Record<string, string> = {
     active: 'アクティブ',
     prospect: '見込み',
+    trial: 'トライアル中',
+    customer: '顧客',
     inactive: '非アクティブ',
+    suspended: '一時停止',
     churned: '離脱',
+    partner: 'パートナー',
   };
 
   return (

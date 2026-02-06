@@ -191,6 +191,12 @@ export function ContactHeader({
           </div>
         </FilterBar>
       </div>
+      <div className="rounded-lg border border-muted-200 bg-muted/50 p-3 dark:border-muted-800">
+        <p className="text-xs text-muted-foreground">
+          <strong>ヒント:</strong> 電話・メールしたら「活動履歴」に記録すると、「最終連絡」「反応」「ネクストアクション」が一覧に表示されます。
+          <Link href="/activities" className="ml-1 text-primary hover:underline">活動を記録 →</Link>
+        </p>
+      </div>
     </div>
   );
 }

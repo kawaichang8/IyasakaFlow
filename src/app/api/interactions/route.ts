@@ -118,6 +118,8 @@ export async function GET(request: NextRequest) {
       date: interaction.date.toISOString(),
       duration: interaction.duration,
       outcome: interaction.outcome,
+      nextAction: interaction.nextAction,
+      nextActionDate: interaction.nextActionDate?.toISOString() ?? null,
       account: interaction.account,
       contact: interaction.contact,
       deal: interaction.deal ? {
@@ -176,6 +178,8 @@ export async function POST(request: NextRequest) {
         date: new Date(validatedData.date),
         duration: validatedData.duration || null,
         outcome: validatedData.outcome || null,
+        nextAction: validatedData.nextAction || null,
+        nextActionDate: validatedData.nextActionDate ? new Date(validatedData.nextActionDate) : null,
         accountId: validatedData.accountId || undefined,
         contactId: validatedData.contactId || undefined,
         dealId: validatedData.dealId || undefined,

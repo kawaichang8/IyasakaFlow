@@ -78,32 +78,58 @@ export async function GET(request: NextRequest) {
       skip: (page - 1) * limit,
       take: limit,
     });
+
+    const contactIds = contacts.map((c) => c.id);
+    const latestByContact = contactIds.length
+      ? await prisma.interaction.findMany({
+          where: { contactId: { in: contactIds } },
+          orderBy: { date: 'desc' },
+          select: {
+            contactId: true,
+            outcome: true,
+            nextAction: true,
+            nextActionDate: true,
+          },
+        })
+      : [];
+    const latestMap = new Map<string, (typeof latestByContact)[0]>();
+    for (const i of latestByContact) {
+      if (i.contactId && !latestMap.has(i.contactId)) {
+        latestMap.set(i.contactId, i);
+      }
+    }
     
     // レスポンス用にデータを整形
-    const formattedContacts = contacts.map((contact) => ({
-      id: contact.id,
-      accountId: contact.accountId,
-      name: contact.name,
-      firstName: contact.firstName,
-      lastName: contact.lastName,
-      email: contact.email,
-      phone: contact.phone,
-      mobile: contact.mobile,
-      role: contact.role,
-      department: contact.department,
-      company: contact.account.name,
-      influenceLevel: contact.influenceLevel.toLowerCase(),
-      status: contact.status.toLowerCase(),
-      tags: contact.tags,
-      notes: contact.notes,
-      lastContactDate: contact.lastContactDate?.toISOString() || null,
-      account: contact.account,
-      owner: contact.owner,
-      interactionCount: contact._count.interactions,
-      dealCount: contact._count.deals,
-      createdAt: contact.createdAt.toISOString(),
-      updatedAt: contact.updatedAt.toISOString(),
-    }));
+    const formattedContacts = contacts.map((contact) => {
+      const latest = latestMap.get(contact.id);
+      return {
+        id: contact.id,
+        accountId: contact.accountId,
+        name: contact.name,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        email: contact.email,
+        phone: contact.phone,
+        mobile: contact.mobile,
+        role: contact.role,
+        department: contact.department,
+        company: contact.account.name,
+        influenceLevel: contact.influenceLevel.toLowerCase(),
+        status: contact.status.toLowerCase(),
+        tags: contact.tags,
+        notes: contact.notes,
+        lastContactDate: contact.lastContactDate?.toISOString() || null,
+        account: contact.account,
+        owner: contact.owner,
+        interactionCount: contact._count.interactions,
+        dealCount: contact._count.deals,
+        lastOutcome: latest?.outcome ?? null,
+        nextAction: latest?.nextAction ?? null,
+        nextActionDate: latest?.nextActionDate?.toISOString() ?? null,
+        createdAt: contact.createdAt.toISOString(),
+        updatedAt: contact.updatedAt.toISOString(),
+      };
+    });
     
     return NextResponse.json({
       data: formattedContacts,

@@ -87,6 +87,8 @@ export function InteractionForm({
       date: defaultDateTime,
       duration: undefined,
       outcome: '',
+      nextAction: '',
+      nextActionDate: '',
       accountId: accountId || '',
       contactId: contactId || '',
       dealId: dealId || '',
@@ -249,14 +251,80 @@ export function InteractionForm({
         )}
       </div>
 
-      {/* 結果/アウトカム */}
+      {/* 結果/アウトカム（反応のありなし・相手の反応） */}
       <div className="space-y-2">
-        <Label htmlFor="outcome">結果・アウトカム</Label>
+        <Label htmlFor="outcome">結果・アウトカム（相手の反応を一言で）</Label>
         <Input
           id="outcome"
-          placeholder="例: 次回ミーティングを設定、提案書送付予定"
+          placeholder="例: 好感触、要フォロー、反応なし、次回提案予定"
           {...register('outcome')}
         />
+        <p className="text-xs text-muted-foreground">記録しておくと一覧で「反応」が一目で分かります</p>
+      </div>
+      {/* アウトカムのクイック入力 */}
+      <div className="flex flex-wrap gap-2">
+        <span className="w-full text-xs text-muted-foreground">クイック:</span>
+        {[
+          { label: '好感触', value: '好感触' },
+          { label: '要フォロー', value: '要フォロー' },
+          { label: '反応あり', value: '反応あり' },
+          { label: '反応なし', value: '反応なし' },
+          { label: '次回コール予定', value: '次回コール予定' },
+          { label: 'メール送信予定', value: 'メール送信予定' },
+          { label: 'ミーティング設定', value: 'ミーティング設定' },
+          { label: '提案書送付予定', value: '提案書送付予定' },
+        ].map(({ label, value }) => (
+          <Button
+            key={value}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setValue('outcome', value)}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+
+      {/* 次のアクション・予定日 */}
+      <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="nextAction">次のアクション（次にやること）</Label>
+          <Input
+            id="nextAction"
+            placeholder="例: 3日後にフォロー電話"
+            {...register('nextAction')}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="nextActionDate">予定日（任意）</Label>
+          <Input
+            id="nextActionDate"
+            type="datetime-local"
+            {...register('nextActionDate')}
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <span className="w-full text-xs text-muted-foreground">次のアクション クイック:</span>
+        {[
+          '次回コール',
+          'メール送る',
+          '提案書送付',
+          '見積送付',
+          'ミーティング設定',
+          '資料送付',
+        ].map((action) => (
+          <Button
+            key={action}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setValue('nextAction', action)}
+          >
+            {action}
+          </Button>
+        ))}
       </div>
 
       {/* 関連エンティティ */}
@@ -334,37 +402,6 @@ export function InteractionForm({
           </Select>
         </div>
       </div>
-
-      {/* クイックテンプレート */}
-      {selectedType === 'call' && (
-        <div className="flex flex-wrap gap-2 border-t pt-4">
-          <span className="w-full text-xs text-muted-foreground">クイック入力:</span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setValue('outcome', '次回コール予定')}
-          >
-            次回コール予定
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setValue('outcome', 'メール送信予定')}
-          >
-            メール送信予定
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setValue('outcome', 'ミーティング設定')}
-          >
-            ミーティング設定
-          </Button>
-        </div>
-      )}
 
       {/* アクションボタン */}
       <div className="flex justify-end gap-2">

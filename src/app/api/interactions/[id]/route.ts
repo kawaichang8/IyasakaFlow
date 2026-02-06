@@ -143,6 +143,8 @@ export async function PATCH(
     if (validatedData.date !== undefined) updateData.date = new Date(validatedData.date);
     if (validatedData.duration !== undefined) updateData.duration = validatedData.duration || null;
     if (validatedData.outcome !== undefined) updateData.outcome = validatedData.outcome || null;
+    if (validatedData.nextAction !== undefined) updateData.nextAction = validatedData.nextAction || null;
+    if (validatedData.nextActionDate !== undefined) updateData.nextActionDate = validatedData.nextActionDate ? new Date(validatedData.nextActionDate) : null;
     if (validatedData.accountId !== undefined) updateData.accountId = validatedData.accountId || null;
     if (validatedData.contactId !== undefined) updateData.contactId = validatedData.contactId || null;
     if (validatedData.dealId !== undefined) updateData.dealId = validatedData.dealId || null;

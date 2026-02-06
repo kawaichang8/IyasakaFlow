@@ -71,12 +71,13 @@ export function parseCsv(
   csvText: string,
   columns: string[]
 ): Record<string, string>[] {
-  const lines = csvText.split(/\r?\n/).filter((line) => line.trim());
+  const normalized = csvText.replace(/^\uFEFF/, '').trim();
+  const lines = normalized.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) return [];
   const firstLine = lines[0];
   if (!firstLine) return [];
   const headerRow = parseCsvLine(firstLine);
-  const headerMap = headerRow.map((h) => h.trim().toLowerCase());
+  const headerMap = headerRow.map((h) => h.trim().replace(/\uFEFF/g, '').toLowerCase());
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];

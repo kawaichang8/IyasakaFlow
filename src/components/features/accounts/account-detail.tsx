@@ -14,6 +14,9 @@ import {
   Edit,
   Plus,
   ChevronLeft,
+  MessageSquare,
+  Target,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useAccount } from '@/hooks/use-accounts';
+import { ACCOUNT_TYPES } from '@/lib/validations/account';
 import { AccountForm } from './account-form';
 import type { AccountFormData } from '@/lib/validations/account';
 import type { Account } from '@/types';
@@ -45,9 +49,10 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
   const account = data?.data as (Account & {
     contacts?: Array<{ id: string; name: string; email?: string; role?: string; influenceLevel?: string }>;
     deals?: Array<{ id: string; name: string; value: number; stage: string }>;
-    interactions?: Array<{ id: string; type: string; note: string | null; date: string }>;
+    interactions?: Array<{ id: string; type: string; note: string | null; date: string; outcome?: string | null; nextAction?: string | null; nextActionDate?: string | null }>;
     totalDealValue?: number;
   }) | undefined;
+  const latestInteraction = account?.interactions?.[0];
 
   if (isLoading) {
     return (
@@ -85,7 +90,14 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{account.name}</h1>
-            <p className="text-muted-foreground">{account.industry ?? '—'}</p>
+            <p className="text-muted-foreground">
+              {account.industry ?? '—'}
+              {account.accountType && (
+                <span className="ml-2">
+                  · {ACCOUNT_TYPES.find((t) => t.value === account.accountType)?.label ?? account.accountType}
+                </span>
+              )}
+            </p>
             <div className="mt-1">
               <StatusBadge status={account.status} />
             </div>
@@ -121,6 +133,53 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* 状況サマリー（最終連絡・反応・ネクストアクション） */}
+      {(latestInteraction?.date || latestInteraction?.outcome || latestInteraction?.nextAction) && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              状況サマリー — ネクストアクション
+            </CardTitle>
+            <CardDescription>最後の連絡と次のアクションがひと目で分かります</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-3">
+            {latestInteraction?.date && (
+              <div className="flex items-start gap-3 rounded-lg border bg-background p-3">
+                <Clock className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">最終連絡</p>
+                  <p className="text-sm font-medium">{formatDate(latestInteraction.date)}</p>
+                </div>
+              </div>
+            )}
+            {latestInteraction?.outcome && (
+              <div className="flex items-start gap-3 rounded-lg border bg-background p-3">
+                <MessageSquare className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-muted-foreground">直近の反応</p>
+                  <p className="truncate text-sm font-medium" title={latestInteraction.outcome}>{latestInteraction.outcome}</p>
+                </div>
+              </div>
+            )}
+            {(latestInteraction?.nextAction || latestInteraction?.nextActionDate) && (
+              <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <Target className="mt-0.5 h-4 w-4 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-muted-foreground">ネクストアクション</p>
+                  {latestInteraction.nextAction && (
+                    <p className="text-sm font-semibold text-primary" title={latestInteraction.nextAction}>{latestInteraction.nextAction}</p>
+                  )}
+                  {latestInteraction.nextActionDate && (
+                    <p className="text-xs text-muted-foreground">予定: {formatDate(latestInteraction.nextActionDate)}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 概要カード */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -347,6 +406,7 @@ function accountToFormData(account: Account): Partial<AccountFormData> & { id: s
     country: account.country ?? '日本',
     employeeCount: account.employeeCount ?? undefined,
     annualRevenue: account.annualRevenue ?? undefined,
+    accountType: account.accountType ?? undefined,
     status: account.status,
     description: account.description ?? '',
     tags: account.tags ?? [],
@@ -357,15 +417,23 @@ function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, 'default' | 'success' | 'warning' | 'secondary'> = {
     active: 'success',
     prospect: 'warning',
+    trial: 'warning',
+    customer: 'success',
     inactive: 'secondary',
+    suspended: 'secondary',
     churned: 'secondary',
+    partner: 'default',
   };
 
   const labels: Record<string, string> = {
     active: 'アクティブ',
     prospect: '見込み',
+    trial: 'トライアル中',
+    customer: '顧客',
     inactive: '非アクティブ',
+    suspended: '一時停止',
     churned: '離脱',
+    partner: 'パートナー',
   };
 
   return (

@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
     const industry = searchParams.get('industry') || '';
+    const accountType = searchParams.get('accountType') || '';
     const status = searchParams.get('status') || '';
     const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
@@ -35,7 +36,9 @@ export async function GET(request: NextRequest) {
     if (industry) {
       where.industry = industry;
     }
-    
+    if (accountType) {
+      where.accountType = accountType as any;
+    }
     if (status) {
       where.status = status as any;
     }
@@ -72,15 +75,36 @@ export async function GET(request: NextRequest) {
       skip: (page - 1) * limit,
       take: limit,
     });
+
+    const accountIds = accounts.map((a) => a.id);
+    // 企業ごとの直近インタラクション（最終連絡日・反応・ネクストアクション）
+    const latestByAccount = accountIds.length
+      ? await prisma.interaction.findMany({
+          where: { accountId: { in: accountIds } },
+          orderBy: { date: 'desc' },
+          select: {
+            accountId: true,
+            date: true,
+            outcome: true,
+            nextAction: true,
+            nextActionDate: true,
+          },
+        })
+      : [];
+    const latestMap = new Map<string, (typeof latestByAccount)[0]>();
+    for (const i of latestByAccount) {
+      if (i.accountId && !latestMap.has(i.accountId)) {
+        latestMap.set(i.accountId, i);
+      }
+    }
     
     // レスポンス用にデータを整形
     const formattedAccounts = accounts.map((account) => {
-      // 取引総額を計算（BigIntをNumberに変換）
       const totalDealValue = account.deals.reduce(
         (sum, deal) => sum + Number(deal.value),
         0
       );
-      
+      const latest = latestMap.get(account.id);
       return {
         id: account.id,
         name: account.name,
@@ -95,6 +119,7 @@ export async function GET(request: NextRequest) {
         country: account.country,
         employeeCount: account.employeeCount,
         annualRevenue: account.annualRevenue ? Number(account.annualRevenue) : null,
+        accountType: account.accountType?.toLowerCase() ?? null,
         status: account.status.toLowerCase(),
         description: account.description,
         tags: account.tags,
@@ -102,6 +127,10 @@ export async function GET(request: NextRequest) {
         dealCount: account._count.deals,
         totalDealValue,
         owner: account.owner,
+        lastActivityAt: latest?.date?.toISOString() ?? null,
+        lastOutcome: latest?.outcome ?? null,
+        nextAction: latest?.nextAction ?? null,
+        nextActionDate: latest?.nextActionDate?.toISOString() ?? null,
         createdAt: account.createdAt.toISOString(),
         updatedAt: account.updatedAt.toISOString(),
       };
@@ -136,12 +165,25 @@ export async function POST(request: NextRequest) {
     // バリデーション
     const validatedData = accountSchema.parse(body);
     
-    // ステータスをenumに変換
-    const statusMap: Record<string, 'PROSPECT' | 'ACTIVE' | 'INACTIVE' | 'CHURNED'> = {
+    // ステータス・種別をenumに変換
+    const statusMap: Record<string, 'PROSPECT' | 'TRIAL' | 'CUSTOMER' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'CHURNED' | 'PARTNER'> = {
       prospect: 'PROSPECT',
+      trial: 'TRIAL',
+      customer: 'CUSTOMER',
       active: 'ACTIVE',
       inactive: 'INACTIVE',
+      suspended: 'SUSPENDED',
       churned: 'CHURNED',
+      partner: 'PARTNER',
+    };
+    const accountTypeMap: Record<string, 'CUSTOMER' | 'PROSPECT' | 'SUBCONTRACTOR' | 'OUTSOURCE' | 'FREELANCER' | 'PARTNER' | 'OTHER'> = {
+      customer: 'CUSTOMER',
+      prospect: 'PROSPECT',
+      subcontractor: 'SUBCONTRACTOR',
+      outsource: 'OUTSOURCE',
+      freelancer: 'FREELANCER',
+      partner: 'PARTNER',
+      other: 'OTHER',
     };
     
     // アカウントを作成
@@ -159,6 +201,7 @@ export async function POST(request: NextRequest) {
         country: validatedData.country || '日本',
         employeeCount: validatedData.employeeCount || null,
         annualRevenue: validatedData.annualRevenue ? BigInt(validatedData.annualRevenue) : null,
+        accountType: validatedData.accountType ? accountTypeMap[validatedData.accountType] ?? null : null,
         status: statusMap[validatedData.status] || 'PROSPECT',
         description: validatedData.description || null,
         tags: validatedData.tags || [],
@@ -184,6 +227,7 @@ export async function POST(request: NextRequest) {
       website: newAccount.website,
       phone: newAccount.phone,
       email: newAccount.email,
+      accountType: newAccount.accountType?.toLowerCase() ?? null,
       status: newAccount.status.toLowerCase(),
       owner: newAccount.owner,
       createdAt: newAccount.createdAt.toISOString(),

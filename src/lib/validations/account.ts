@@ -6,13 +6,43 @@ import { z } from 'zod';
  */
 
 /**
+ * 取引先種別（顧客・下請け・外注・フリーランス等）
+ */
+export const accountTypeSchema = z.enum([
+  'customer',
+  'prospect',
+  'subcontractor',
+  'outsource',
+  'freelancer',
+  'partner',
+  'other',
+]);
+
+/**
+ * 取引先種別表示用
+ */
+export const ACCOUNT_TYPES = [
+  { value: 'customer', label: '顧客' },
+  { value: 'prospect', label: '見込み' },
+  { value: 'subcontractor', label: '下請け' },
+  { value: 'outsource', label: '外注先' },
+  { value: 'freelancer', label: 'フリーランス・個人' },
+  { value: 'partner', label: 'パートナー' },
+  { value: 'other', label: 'その他' },
+] as const;
+
+/**
  * アカウントステータス
  */
 export const accountStatusSchema = z.enum([
   'prospect',
+  'trial',
+  'customer',
   'active',
   'inactive',
+  'suspended',
   'churned',
+  'partner',
 ]);
 
 /**
@@ -20,9 +50,13 @@ export const accountStatusSchema = z.enum([
  */
 export const ACCOUNT_STATUSES = [
   { value: 'prospect', label: '見込み' },
+  { value: 'trial', label: 'トライアル中' },
+  { value: 'customer', label: '顧客' },
   { value: 'active', label: 'アクティブ' },
   { value: 'inactive', label: '非アクティブ' },
+  { value: 'suspended', label: '一時停止' },
   { value: 'churned', label: '離脱' },
+  { value: 'partner', label: 'パートナー' },
 ] as const;
 
 /**
@@ -151,6 +185,8 @@ export const accountSchema = z.object({
       return typeof v === 'number' ? v : null;
     }),
   
+  accountType: accountTypeSchema.optional().nullable(),
+  
   status: accountStatusSchema.default('prospect'),
   
   description: z
@@ -186,6 +222,7 @@ export const accountSchema = z.object({
 export const accountFilterSchema = z.object({
   search: z.string().optional(),
   industry: z.string().optional(),
+  accountType: accountTypeSchema.optional(),
   status: accountStatusSchema.optional(),
   minEmployeeCount: z.number().optional(),
   maxEmployeeCount: z.number().optional(),
@@ -201,3 +238,4 @@ export const accountFilterSchema = z.object({
 export type AccountFormData = z.infer<typeof accountSchema>;
 export type AccountFilterData = z.infer<typeof accountFilterSchema>;
 export type AccountStatus = z.infer<typeof accountStatusSchema>;
+export type AccountType = z.infer<typeof accountTypeSchema>;

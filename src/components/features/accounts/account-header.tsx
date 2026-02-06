@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { SearchInput } from '@/components/ui/search-input';
 import { AccountForm } from './account-form';
-import { ACCOUNT_STATUSES, ACCOUNT_INDUSTRIES } from '@/lib/validations/account';
+import { ACCOUNT_STATUSES, ACCOUNT_INDUSTRIES, ACCOUNT_TYPES } from '@/lib/validations/account';
 import { downloadExport } from '@/lib/import-export/download';
 import { toast } from 'sonner';
 
@@ -38,6 +38,7 @@ interface AccountHeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   industry: string;
+  accountType: string;
   status: string;
   onFilterChange: (key: string, value: string | undefined) => void;
   onClearFilters: () => void;
@@ -52,6 +53,7 @@ export function AccountHeader({
   searchValue,
   onSearchChange,
   industry,
+  accountType,
   status,
   onFilterChange,
   onClearFilters,
@@ -168,6 +170,25 @@ export function AccountHeader({
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>取引先種別</Label>
+              <Select
+                value={accountType || 'all'}
+                onValueChange={(v) => onFilterChange('accountType', v === 'all' ? undefined : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="すべて" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  {ACCOUNT_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>業種</Label>
               <Select
                 value={industry || 'all'}
@@ -192,8 +213,9 @@ export function AccountHeader({
 
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>ヒント:</strong> 企業アカウントを作成すると、その企業の連絡先（担当者）を追加できます。
-          BtoBでは、1つの企業に複数の連絡先を紐づけて管理することが重要です。
+          <strong>営業のコツ:</strong> まず企業を1件登録 → その企業の「連絡先」で担当者を追加 → 電話・メールしたら「活動履歴」に記録。
+          「最終連絡」「反応」「ネクストアクション」が一覧で分かるので、次に何をすべきか迷いません。
+          <a href="/help" className="ml-1 font-medium underline">ヘルプで基本フローを見る →</a>
         </p>
       </div>
     </div>

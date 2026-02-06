@@ -147,25 +147,27 @@ export function DealDetail({ dealId }: DealDetailProps) {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              {DEAL_STAGES.filter(s => s.value !== 'closed_won' && s.value !== 'closed_lost').map((stage, index) => {
-                const isActive = stage.value === deal.stage;
-                const isPast = DEAL_STAGES.findIndex(s => s.value === deal.stage) > index;
-                
-                return (
-                  <div key={stage.value} className="flex flex-1 items-center">
-                    <div className={`flex h-8 flex-1 items-center justify-center rounded-full text-xs font-medium ${
-                      isActive ? `${stage.color} text-white` :
-                      isPast ? 'bg-green-500 text-white' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
-                      {stage.label}
+              {(() => {
+                const openStages = DEAL_STAGES.filter(s => s.value !== 'closed_won' && s.value !== 'closed_lost');
+                return openStages.map((stage, index) => {
+                  const isActive = stage.value === deal.stage;
+                  const isPast = DEAL_STAGES.findIndex(s => s.value === deal.stage) > index;
+                  return (
+                    <div key={stage.value} className="flex flex-1 items-center">
+                      <div className={`flex h-8 flex-1 items-center justify-center rounded-full text-xs font-medium ${
+                        isActive ? `${stage.color} text-white` :
+                        isPast ? 'bg-green-500 text-white' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {stage.label}
+                      </div>
+                      {index < openStages.length - 1 && (
+                        <div className={`h-1 w-4 ${isPast ? 'bg-green-500' : 'bg-muted'}`} />
+                      )}
                     </div>
-                    {index < 3 && (
-                      <div className={`h-1 w-4 ${isPast ? 'bg-green-500' : 'bg-muted'}`} />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </CardContent>
         </Card>

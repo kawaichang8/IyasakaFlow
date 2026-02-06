@@ -60,6 +60,8 @@ export async function GET(
             note: true,
             date: true,
             outcome: true,
+            nextAction: true,
+            nextActionDate: true,
             contact: {
               select: {
                 id: true,
@@ -135,6 +137,7 @@ export async function GET(
       country: account.country,
       employeeCount: account.employeeCount,
       annualRevenue: account.annualRevenue ? Number(account.annualRevenue) : null,
+      accountType: account.accountType?.toLowerCase() ?? null,
       status: account.status.toLowerCase(),
       description: account.description,
       tags: account.tags,
@@ -156,6 +159,7 @@ export async function GET(
         ...i,
         type: i.type.toLowerCase(),
         date: i.date.toISOString(),
+        nextActionDate: i.nextActionDate?.toISOString() ?? null,
       })),
       tasks: account.tasks.map((t) => ({
         ...t,
@@ -208,12 +212,25 @@ export async function PATCH(
       );
     }
     
-    // ステータスをenumに変換
-    const statusMap: Record<string, 'PROSPECT' | 'ACTIVE' | 'INACTIVE' | 'CHURNED'> = {
+    // ステータス・種別をenumに変換
+    const statusMap: Record<string, 'PROSPECT' | 'TRIAL' | 'CUSTOMER' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'CHURNED' | 'PARTNER'> = {
       prospect: 'PROSPECT',
+      trial: 'TRIAL',
+      customer: 'CUSTOMER',
       active: 'ACTIVE',
       inactive: 'INACTIVE',
+      suspended: 'SUSPENDED',
       churned: 'CHURNED',
+      partner: 'PARTNER',
+    };
+    const accountTypeMap: Record<string, 'CUSTOMER' | 'PROSPECT' | 'SUBCONTRACTOR' | 'OUTSOURCE' | 'FREELANCER' | 'PARTNER' | 'OTHER'> = {
+      customer: 'CUSTOMER',
+      prospect: 'PROSPECT',
+      subcontractor: 'SUBCONTRACTOR',
+      outsource: 'OUTSOURCE',
+      freelancer: 'FREELANCER',
+      partner: 'PARTNER',
+      other: 'OTHER',
     };
     
     // 更新データを構築
@@ -221,6 +238,9 @@ export async function PATCH(
     
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.industry !== undefined) updateData.industry = validatedData.industry || null;
+    if (validatedData.accountType !== undefined) {
+      updateData.accountType = validatedData.accountType ? accountTypeMap[validatedData.accountType] ?? null : null;
+    }
     if (validatedData.website !== undefined) updateData.website = validatedData.website || null;
     if (validatedData.phone !== undefined) updateData.phone = validatedData.phone || null;
     if (validatedData.email !== undefined) updateData.email = validatedData.email || null;
@@ -259,6 +279,7 @@ export async function PATCH(
       id: updatedAccount.id,
       name: updatedAccount.name,
       industry: updatedAccount.industry,
+      accountType: updatedAccount.accountType?.toLowerCase() ?? null,
       status: updatedAccount.status.toLowerCase(),
       owner: updatedAccount.owner,
       updatedAt: updatedAccount.updatedAt.toISOString(),

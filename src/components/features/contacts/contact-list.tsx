@@ -165,6 +165,8 @@ export function ContactList({ params }: ContactListProps) {
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">役職</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium sm:table-cell">影響力</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">最終連絡</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">反応</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">ネクストアクション</th>
                 <th className="px-4 py-3 text-right text-sm font-medium">操作</th>
               </tr>
             </thead>
@@ -250,6 +252,12 @@ function ContactTableRow({
       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
         {contact.lastContactDate ? formatRelativeTime(contact.lastContactDate) : '-'}
       </td>
+      <td className="hidden max-w-[100px] truncate px-4 py-3 text-sm text-muted-foreground lg:table-cell" title={contact.lastOutcome ?? undefined}>
+        {contact.lastOutcome ?? '—'}
+      </td>
+      <td className="hidden max-w-[120px] truncate px-4 py-3 text-sm lg:table-cell" title={contact.nextAction ?? undefined}>
+        {contact.nextAction ? <span className="font-medium text-primary">{contact.nextAction}</span> : '—'}
+      </td>
       <td className="px-4 py-3 text-right">
         <ContactActions contact={contact} onEdit={onEdit} onDelete={onDelete} />
       </td>
@@ -280,6 +288,13 @@ function ContactCard({ contact, onEdit, onDelete }: { contact: ContactWithAccoun
           <InfluenceBadge level={contact.influenceLevel} />
           <StatusBadge status={contact.status} />
         </div>
+
+        {(contact.lastOutcome || contact.nextAction) && (
+          <div className="mt-3 space-y-1 rounded-md border border-dashed border-muted-foreground/30 bg-muted/20 px-3 py-2 text-xs">
+            {contact.lastOutcome && <p className="truncate text-muted-foreground" title={contact.lastOutcome}>反応: {contact.lastOutcome}</p>}
+            {contact.nextAction && <p className="font-medium text-primary" title={contact.nextAction}>次: {contact.nextAction}</p>}
+          </div>
+        )}
 
         <div className="mt-4 space-y-2 border-t pt-4 text-sm">
           {contact.company && (

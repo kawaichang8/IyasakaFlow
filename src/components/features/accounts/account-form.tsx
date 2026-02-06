@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { accountSchema, ACCOUNT_INDUSTRIES, type AccountFormData } from '@/lib/validations/account';
+import { accountSchema, ACCOUNT_INDUSTRIES, ACCOUNT_STATUSES, ACCOUNT_TYPES, type AccountFormData } from '@/lib/validations/account';
 import { useQueryClient } from '@tanstack/react-query';
 import { ACCOUNTS_QUERY_KEY } from '@/hooks/use-accounts';
 import { CONTACTS_QUERY_KEY } from '@/hooks/use-contacts';
@@ -68,6 +68,7 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
       country: '日本',
       employeeCount: undefined,
       annualRevenue: undefined,
+      accountType: undefined,
       status: 'prospect',
       description: '',
       tags: [],
@@ -76,6 +77,7 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
   });
 
   const status = watch('status');
+  const accountType = watch('accountType');
 
   const onSubmit = async (data: AccountFormData) => {
     try {
@@ -173,6 +175,28 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
           </Select>
         </div>
 
+        {/* 取引先種別（顧客・下請け・外注・フリーランス等） */}
+        <div className="space-y-2">
+          <Label>取引先種別</Label>
+          <Select
+            value={accountType || ''}
+            onValueChange={(value) => setValue('accountType', value === '' ? undefined : (value as any))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="種別を選択（任意）" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">未選択</SelectItem>
+              {ACCOUNT_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">顧客・下請け・外注先・フリーランスなど</p>
+        </div>
+
         {/* ステータス */}
         <div className="space-y-2">
           <Label>ステータス</Label>
@@ -184,10 +208,11 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
               <SelectValue placeholder="ステータスを選択" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="prospect">見込み客</SelectItem>
-              <SelectItem value="active">アクティブ</SelectItem>
-              <SelectItem value="inactive">非アクティブ</SelectItem>
-              <SelectItem value="churned">離脱</SelectItem>
+              {ACCOUNT_STATUSES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import Link from 'next/link';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useUpdateTaskStatus } from '@/hooks/use-tasks';
@@ -16,6 +17,10 @@ import {
   TodaysTasks,
   TodaysTasksSkeleton,
 } from '@/components/features/dashboard';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Lightbulb, ArrowRight } from 'lucide-react';
+import { formatRelativeTime } from '@/lib/utils';
 
 /**
  * ダッシュボードページ
@@ -61,6 +66,14 @@ export default function DashboardPage() {
   }
 
   const dashboardData = data?.data;
+  const needToFollowUp = dashboardData?.needToFollowUp ?? [];
+  const tips = [
+    { text: '活動を記録するときは「結果」と「次のアクション」を書くと、翌日から何をすべきか明確になります。', link: '/activities', label: '活動を記録' },
+    { text: 'パイプラインの案件をドラッグ＆ドロップでステージ移動できます。成約したら「成約」に移動しましょう。', link: '/deals', label: 'パイプラインを見る' },
+    { text: '7日以上連絡していない企業は「要フォロー」に表示されます。こまめにフォローすると成約率が上がります。', link: '/accounts', label: '企業一覧' },
+    { text: 'メール送信前にテンプレートを使うと、初心者でも安心して送れます。', link: '/emails', label: 'メール・テンプレート' },
+  ];
+  const todayTip = tips[new Date().getDate() % tips.length];
 
   return (
     <div className="space-y-6">
@@ -96,6 +109,45 @@ export default function DashboardPage() {
         ) : null}
       </div>
 
+      {/* 要フォロー（営業初心者向け：忘れずにフォロー） */}
+      {!isLoading && needToFollowUp.length > 0 && (
+        <Card className="border-amber-200 dark:border-amber-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <AlertCircle className="h-5 w-5" />
+              要フォロー
+            </CardTitle>
+            <CardDescription>
+              7日以上連絡していない企業です。フォローすると商談が進みやすくなります
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {needToFollowUp.map((item) => (
+                <li key={item.id} className="flex items-center justify-between rounded-md border bg-card px-3 py-2 text-sm">
+                  <span className="font-medium">{item.name}</span>
+                  <div className="flex items-center gap-2">
+                    {item.lastActivityAt ? (
+                      <span className="text-muted-foreground">{formatRelativeTime(item.lastActivityAt)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">未連絡</span>
+                    )}
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/accounts/${item.id}`}>
+                        確認 <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <Button variant="link" className="mt-2 text-amber-700 dark:text-amber-300" asChild>
+              <Link href="/accounts">企業一覧で全て見る →</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* アクティビティとタスク */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 最近の活動 */}
@@ -116,18 +168,18 @@ export default function DashboardPage() {
         ) : null}
       </div>
 
-      {/* クイックヒント（初心者向け） */}
+      {/* 今日のヒント（営業初心者向け） */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
-        <h3 className="font-semibold text-blue-800 dark:text-blue-200">
-          💡 今日のヒント
+        <h3 className="flex items-center gap-2 font-semibold text-blue-800 dark:text-blue-200">
+          <Lightbulb className="h-4 w-4" />
+          今日のヒント
         </h3>
         <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-          パイプラインの案件をドラッグ＆ドロップで移動できます。
-          ステージを更新すると、成約確率も自動で調整されます。
-          <a href="/deals" className="ml-1 underline">
-            パイプラインを見る →
-          </a>
+          {todayTip.text}
         </p>
+        <Button variant="link" size="sm" className="mt-2 p-0 text-blue-700 dark:text-blue-300" asChild>
+          <Link href={todayTip.link}>{todayTip.label} →</Link>
+        </Button>
       </div>
     </div>
   );

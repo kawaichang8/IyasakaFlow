@@ -9,12 +9,19 @@ const MAX_IMPORT = 2000;
 
 type ImportType = 'accounts' | 'contacts' | 'deals';
 
-// CSVヘッダー（日本語）→ フィールド名
+// CSVヘッダー（日本語）。インポート時は別名も受け付ける
 const CSV_HEADER_KEYS = {
   accounts: EXPORT_COLUMNS.accounts.map((c) => c.header),
   contacts: EXPORT_COLUMNS.contacts.map((c) => c.header),
   deals: EXPORT_COLUMNS.deals.map((c) => c.header),
 };
+
+// 連絡先インポートで受け付ける列の別名（会社名/氏名など）
+const CONTACT_IMPORT_COLUMNS = [
+  '企業名', '会社名', '名前', '氏名', '担当者名', '連絡先名',
+  '名', '姓', 'メール', '電話番号', '携帯', '役職', '部署',
+  '影響力レベル', 'ステータス', 'メモ', 'タグ',
+];
 
 function toStr(v: unknown): string {
   if (v === null || v === undefined) return '';
@@ -55,8 +62,8 @@ export async function POST(request: NextRequest) {
     let rows: Record<string, string>[];
 
     if (isCsv) {
-      // CSV: ヘッダーは日本語（エクスポートと同じ）
-      const columns = CSV_HEADER_KEYS[type];
+      // CSV: 連絡先は「会社名」「氏名」など別名も受け付ける
+      const columns = type === 'contacts' ? CONTACT_IMPORT_COLUMNS : CSV_HEADER_KEYS[type];
       rows = parseCsv(raw, columns);
     } else {
       // JSON: { data: [...] } または [...]
@@ -153,10 +160,13 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row) continue;
-        const accountName = toStr(row.accountName ?? row['企業名']);
-        const name = toStr(row.name ?? row['名前']);
+        const accountName = toStr(row['企業名'] ?? row['会社名']);
+        const name = toStr(row['名前'] ?? row['氏名'] ?? row['担当者名'] ?? row['連絡先名']);
         if (!accountName || !name) {
-          results.errors.push({ row: i + 1, message: '企業名と名前は必須です' });
+          results.errors.push({
+            row: i + 1,
+            message: '企業名（または会社名）と名前（または氏名・担当者名）は必須です。CSVの1行目に「企業名」「名前」または「会社名」「氏名」などの列があるか確認してください。',
+          });
           results.skipped++;
           continue;
         }
@@ -169,22 +179,22 @@ export async function POST(request: NextRequest) {
           continue;
         }
         try {
-          const influenceLevel = (toStr(row.influenceLevel ?? row['影響力レベル']) || 'other').toLowerCase().replace(' ', '_') as any;
-          const status = (toStr(row.status ?? row['ステータス']) || 'active').toLowerCase() as 'active' | 'inactive' | 'bounced';
+          const influenceLevel = (toStr(row['影響力レベル']) || 'other').toLowerCase().replace(/ /g, '_') as any;
+          const status = (toStr(row['ステータス']) || 'active').toLowerCase() as 'active' | 'inactive' | 'bounced';
           const data = {
             accountId: account.id,
             name,
-            firstName: toStr(row.firstName ?? row['名']) || undefined,
-            lastName: toStr(row.lastName ?? row['姓']) || undefined,
-            email: toStr(row.email ?? row['メール']) || undefined,
-            phone: toStr(row.phone ?? row['電話番号']) || undefined,
-            mobile: toStr(row.mobile ?? row['携帯']) || undefined,
-            role: toStr(row.role ?? row['役職']) || undefined,
-            department: toStr(row.department ?? row['部署']) || undefined,
+            firstName: toStr(row['名']) || undefined,
+            lastName: toStr(row['姓']) || undefined,
+            email: toStr(row['メール']) || undefined,
+            phone: toStr(row['電話番号']) || undefined,
+            mobile: toStr(row['携帯']) || undefined,
+            role: toStr(row['役職']) || undefined,
+            department: toStr(row['部署']) || undefined,
             influenceLevel: ['decision_maker', 'influencer', 'user', 'gatekeeper', 'other'].includes(influenceLevel) ? influenceLevel : 'other',
             status: ['active', 'inactive', 'bounced'].includes(status) ? status : 'active',
-            notes: toStr(row.notes ?? row['メモ']) || undefined,
-            tags: toStr(row.tags ?? row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
+            notes: toStr(row['メモ']) || undefined,
+            tags: toStr(row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
           };
           contactSchema.parse(data);
           await prisma.contact.create({

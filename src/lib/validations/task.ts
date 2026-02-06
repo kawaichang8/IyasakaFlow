@@ -12,7 +12,15 @@ export const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 /**
  * ステータス
  */
-export const taskStatusSchema = z.enum(['pending', 'in_progress', 'completed', 'cancelled']);
+export const taskStatusSchema = z.enum([
+  'pending',
+  'in_progress',
+  'deferred',
+  'blocked',
+  'in_review',
+  'completed',
+  'cancelled',
+]);
 
 /**
  * タスク作成/更新スキーマ
@@ -89,6 +97,9 @@ export const TASK_PRIORITIES = [
 export const TASK_STATUSES = [
   { value: 'pending', label: '未着手', color: 'bg-slate-500', icon: '○' },
   { value: 'in_progress', label: '進行中', color: 'bg-blue-500', icon: '◐' },
+  { value: 'deferred', label: '延期', color: 'bg-amber-500', icon: '⏸' },
+  { value: 'blocked', label: 'ブロック中', color: 'bg-orange-500', icon: '⊘' },
+  { value: 'in_review', label: 'レビュー中', color: 'bg-purple-500', icon: '◉' },
   { value: 'completed', label: '完了', color: 'bg-green-500', icon: '●' },
   { value: 'cancelled', label: 'キャンセル', color: 'bg-gray-400', icon: '✕' },
 ] as const;

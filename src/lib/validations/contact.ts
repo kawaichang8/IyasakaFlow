@@ -22,6 +22,9 @@ export const influenceLevelSchema = z.enum([
 export const contactStatusSchema = z.enum([
   'active',
   'inactive',
+  'left',
+  'do_not_contact',
+  'opted_out',
   'bounced',
 ]);
 
@@ -31,6 +34,9 @@ export const contactStatusSchema = z.enum([
 export const CONTACT_STATUSES = [
   { value: 'active', label: 'アクティブ' },
   { value: 'inactive', label: '非アクティブ' },
+  { value: 'left', label: '退職' },
+  { value: 'do_not_contact', label: '連絡不可' },
+  { value: 'opted_out', label: '配信停止' },
   { value: 'bounced', label: 'バウンス' },
 ] as const;
 

@@ -210,6 +210,12 @@ export function DealHeader({
           </FilterBar>
         )}
       </div>
+      <div className="rounded-lg border border-muted-200 bg-muted/50 p-3 dark:border-muted-800">
+        <p className="text-xs text-muted-foreground">
+          <strong>ヒント:</strong> カードをドラッグしてステージを移動できます。成約したら「成約」、見送りは「失注」に。進めるほど成約確率が上がります。
+          <Link href="/help" className="ml-1 text-primary hover:underline">営業フローを見る →</Link>
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Plus, Phone, Mail, Users, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -164,6 +165,12 @@ export function InteractionHeader({
             </div>
           </FilterBar>
         )}
+      </div>
+      <div className="rounded-lg border border-muted-200 bg-muted/50 p-3 dark:border-muted-800">
+        <p className="text-xs text-muted-foreground">
+          <strong>営業のコツ:</strong> 「結果・アウトカム」と「次のアクション」を毎回書くと、企業・連絡先一覧で状況が一目で分かり、翌日から何をすべきか迷いません。
+          <Link href="/help" className="ml-1 text-primary hover:underline">用語集・チェックリスト →</Link>
+        </p>
       </div>
     </div>
   );

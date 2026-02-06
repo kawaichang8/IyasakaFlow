@@ -25,24 +25,48 @@ export interface Account {
   country?: string;
   employeeCount?: number;
   annualRevenue?: number;
+  /** 取引先種別（顧客・下請け・外注・フリーランス等） */
+  accountType?: AccountType | null;
   status: AccountStatus;
   description?: string;
   tags?: string[];
   customFields?: Record<string, any>;
   ownerId?: string;
   parentAccountId?: string;
+  /** 最終活動日（直近インタラクション日） */
+  lastActivityAt?: string | null;
+  /** 直近の反応・アウトカム */
+  lastOutcome?: string | null;
+  /** 直近のネクストアクション */
+  nextAction?: string | null;
+  /** ネクストアクション予定日 */
+  nextActionDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
+/** 取引先種別 */
+export type AccountType =
+  | 'customer'       // 顧客
+  | 'prospect'      // 見込み
+  | 'subcontractor' // 下請け
+  | 'outsource'     // 外注先
+  | 'freelancer'    // フリーランス・個人
+  | 'partner'       // パートナー
+  | 'other';        // その他
+
 /**
  * アカウントステータス
  */
-export type AccountStatus = 
-  | 'prospect'    // 見込み客
-  | 'active'      // アクティブ
-  | 'inactive'    // 非アクティブ
-  | 'churned';    // 離脱
+export type AccountStatus =
+  | 'prospect'
+  | 'trial'
+  | 'customer'
+  | 'active'
+  | 'inactive'
+  | 'suspended'
+  | 'churned'
+  | 'partner';
 
 /**
  * アカウント詳細（連絡先・取引含む）
@@ -83,6 +107,12 @@ export interface Contact {
   customFields?: Record<string, any>;
   ownerId?: string;
   lastContactDate?: string;
+  /** 直近の反応・アウトカム */
+  lastOutcome?: string | null;
+  /** 直近のネクストアクション */
+  nextAction?: string | null;
+  /** ネクストアクション予定日 */
+  nextActionDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }

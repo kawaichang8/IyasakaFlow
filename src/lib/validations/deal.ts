@@ -9,9 +9,13 @@ import { z } from 'zod';
  */
 export const dealStageSchema = z.enum([
   'lead',
+  'discovery',
   'qualified',
+  'demo',
   'proposal',
+  'quote',
   'negotiation',
+  'on_hold',
   'closed_won',
   'closed_lost',
 ]);
@@ -98,9 +102,13 @@ export const dealFilterSchema = z.object({
  */
 export const DEAL_STAGES = [
   { value: 'lead', label: 'リード', color: 'bg-slate-500', probability: 10 },
+  { value: 'discovery', label: 'ヒアリング', color: 'bg-slate-400', probability: 15 },
   { value: 'qualified', label: '見込み評価済み', color: 'bg-blue-500', probability: 25 },
+  { value: 'demo', label: 'デモ', color: 'bg-blue-400', probability: 35 },
   { value: 'proposal', label: '提案', color: 'bg-yellow-500', probability: 50 },
+  { value: 'quote', label: '見積', color: 'bg-yellow-400', probability: 60 },
   { value: 'negotiation', label: '交渉', color: 'bg-orange-500', probability: 75 },
+  { value: 'on_hold', label: '保留', color: 'bg-amber-400', probability: 50 },
   { value: 'closed_won', label: '成約', color: 'bg-green-500', probability: 100 },
   { value: 'closed_lost', label: '失注', color: 'bg-red-500', probability: 0 },
 ] as const;

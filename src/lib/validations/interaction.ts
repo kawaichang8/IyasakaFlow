@@ -52,6 +52,17 @@ export const interactionSchema = z.object({
     .max(500, '結果は500文字以内で入力してください')
     .optional()
     .nullable(),
+
+  nextAction: z
+    .string()
+    .max(200, '次のアクションは200文字以内で入力してください')
+    .optional()
+    .nullable(),
+
+  nextActionDate: z
+    .string()
+    .optional()
+    .nullable(),
   
   // 通話固有
   callDirection: callDirectionSchema.optional().nullable(),

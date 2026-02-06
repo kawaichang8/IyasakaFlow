@@ -56,7 +56,14 @@ interface Task {
   isOverdue?: boolean;
 }
 
+interface NeedToFollowUp {
+  id: string;
+  name: string;
+  lastActivityAt: string | null;
+}
+
 interface DashboardData {
+  needToFollowUp: NeedToFollowUp[];
   kpi: KPIData;
   pipeline: PipelineData[];
   monthlyRevenue: MonthlyData[];

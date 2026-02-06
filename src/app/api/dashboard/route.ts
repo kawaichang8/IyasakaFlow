@@ -43,6 +43,9 @@ export async function GET(_request: NextRequest) {
       
       // 月別成約データ（今年）
       monthlyWonDeals,
+      
+      // 要フォロー（7日以上連絡していない企業）
+      needToFollowUpRaw,
     ] = await Promise.all([
       // アカウント
       prisma.account.count(),
@@ -152,6 +155,13 @@ export async function GET(_request: NextRequest) {
         },
         select: { value: true, actualCloseDate: true },
       }),
+      
+      // 要フォロー: 企業ごとの最終活動日を取得
+      prisma.interaction.groupBy({
+        by: ['accountId'],
+        _max: { date: true },
+        where: { accountId: { not: null } },
+      }),
     ]);
 
     // KPI計算
@@ -204,8 +214,31 @@ export async function GET(_request: NextRequest) {
       };
     });
 
+    // 要フォロー: 7日以上連絡していない企業を最大10件
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const allAccounts = await prisma.account.findMany({
+      select: { id: true, name: true },
+      take: 500,
+    });
+    const needToFollowUp = allAccounts
+      .filter((a) => {
+        const maxDate = needToFollowUpRaw.find((r) => r.accountId === a.id)?._max?.date;
+        return !maxDate || maxDate < sevenDaysAgo;
+      })
+      .slice(0, 10)
+      .map((a) => {
+        const maxDate = needToFollowUpRaw.find((r) => r.accountId === a.id)?._max?.date;
+        return {
+          id: a.id,
+          name: a.name,
+          lastActivityAt: maxDate?.toISOString() ?? null,
+        };
+      });
+
     // レスポンス構築
     const response = {
+      needToFollowUp,
       kpi: {
         pipelineTotal,
         weightedPipeline,
