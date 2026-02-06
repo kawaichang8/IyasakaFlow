@@ -22,7 +22,15 @@ const ACCOUNT_IMPORT_COLUMNS = [
   '業種', 'Webサイト', '電話番号', '電話', 'メール', 'メールアドレス', '住所', '住所２', '市区町村', '都道府県', '郵便番号', '〒', '国',
   '従業員数', '年間売上', 'ステータス', '説明', '備考', 'タグ',
   'Email', 'email', 'Phone', 'phone',
+  'No.', 'カテゴリ', 'ビール数量', '発送日', '発送',
 ];
+
+// 企業で「正式な項目」として使う列（これ以外は説明にまとめる）
+const ACCOUNT_FIELD_KEYS = new Set([
+  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company',
+  '業種', 'Webサイト', '電話番号', '電話', 'メール', 'メールアドレス', '住所', '住所２', '市区町村', '都道府県', '郵便番号', '〒', '国',
+  '従業員数', '年間売上', 'ステータス', '説明', '備考', 'タグ', 'Email', 'email', 'Phone', 'phone',
+]);
 
 // 連絡先インポートで受け付ける列の別名（企業名・名前・住所・電話・メールなど）
 const CONTACT_IMPORT_COLUMNS = [
@@ -31,7 +39,17 @@ const CONTACT_IMPORT_COLUMNS = [
   '名', '姓', 'メール', 'メールアドレス', '電話番号', '電話', '携帯', '役職', '部署',
   '住所', '住所２', '〒', '影響力レベル', 'ステータス', 'メモ', '備考', 'タグ',
   'Email', 'email', 'Phone', 'phone',
+  'No.', 'カテゴリ', 'ビール数量', '発送日', '発送',
 ];
+
+// 連絡先で「正式な項目」として使う列（これ以外は備考にまとめる）
+const CONTACT_FIELD_KEYS = new Set([
+  '企業名', '会社名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company',
+  '名前', '氏名', '担当者名', '連絡先名', '担当者', '連絡先', 'Name', 'name', 'Contact', 'contact',
+  '名', '姓', 'メール', 'メールアドレス', '電話番号', '電話', '携帯', '役職', '部署',
+  '住所', '住所２', '〒', '影響力レベル', 'ステータス', 'メモ', '備考', 'タグ',
+  'Email', 'email', 'Phone', 'phone',
+]);
 
 function toStr(v: unknown): string {
   if (v === null || v === undefined) return '';
@@ -146,6 +164,13 @@ export async function POST(request: NextRequest) {
           continue;
         }
         try {
+          const baseDesc = toStr(row['説明'] ?? row['備考']);
+          const accountExtra: string[] = [];
+          Object.entries(row).forEach(([key, val]) => {
+            const v = toStr(val);
+            if (v && !ACCOUNT_FIELD_KEYS.has(key)) accountExtra.push(`${key}: ${v}`);
+          });
+          const description = accountExtra.length ? (baseDesc ? `${baseDesc}\n${accountExtra.join('\n')}` : accountExtra.join('\n')) : baseDesc || undefined;
           const data = {
             name,
             industry: toStr(row['業種']) || undefined,
@@ -160,7 +185,7 @@ export async function POST(request: NextRequest) {
             employeeCount: toNum(row['従業員数']),
             annualRevenue: toNum(row['年間売上']),
             status: (toStr(row['ステータス']) || 'prospect') as 'prospect' | 'active' | 'inactive' | 'churned',
-            description: toStr(row['説明']) || undefined,
+            description: description || undefined,
             tags: toStr(row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
           };
           accountSchema.parse(data);
@@ -225,6 +250,13 @@ export async function POST(request: NextRequest) {
         try {
           const influenceLevel = (toStr(row['影響力レベル']) || 'other').toLowerCase().replace(/ /g, '_') as any;
           const status = (toStr(row['ステータス']) || 'active').toLowerCase() as 'active' | 'inactive' | 'bounced';
+          const baseNotes = toStr(row['メモ'] ?? row['備考']);
+          const extraParts: string[] = [];
+          Object.entries(row).forEach(([key, val]) => {
+            const v = toStr(val);
+            if (v && !CONTACT_FIELD_KEYS.has(key)) extraParts.push(`${key}: ${v}`);
+          });
+          const notes = extraParts.length ? (baseNotes ? `${baseNotes}\n${extraParts.join('\n')}` : extraParts.join('\n')) : baseNotes || undefined;
           const data = {
             accountId: account.id,
             name,
@@ -237,7 +269,7 @@ export async function POST(request: NextRequest) {
             department: toStr(row['部署']) || undefined,
             influenceLevel: ['decision_maker', 'influencer', 'user', 'gatekeeper', 'other'].includes(influenceLevel) ? influenceLevel : 'other',
             status: ['active', 'inactive', 'bounced'].includes(status) ? status : 'active',
-            notes: toStr(row['メモ'] ?? row['備考']) || undefined,
+            notes: notes || undefined,
             tags: toStr(row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
           };
           contactSchema.parse(data);
