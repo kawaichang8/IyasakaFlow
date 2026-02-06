@@ -16,6 +16,13 @@ const CSV_HEADER_KEYS = {
   deals: EXPORT_COLUMNS.deals.map((c) => c.header),
 };
 
+// 企業アカウントインポートで受け付ける列の別名（会社名/企業名など）
+const ACCOUNT_IMPORT_COLUMNS = [
+  '会社名', '企業名', '企業', '会社',
+  '業種', 'Webサイト', '電話番号', 'メール', '住所', '市区町村', '都道府県', '郵便番号', '国',
+  '従業員数', '年間売上', 'ステータス', '説明', 'タグ',
+];
+
 // 連絡先インポートで受け付ける列の別名（会社名/氏名など）
 const CONTACT_IMPORT_COLUMNS = [
   '企業名', '会社名', '名前', '氏名', '担当者名', '連絡先名',
@@ -62,8 +69,11 @@ export async function POST(request: NextRequest) {
     let rows: Record<string, string>[];
 
     if (isCsv) {
-      // CSV: 連絡先は「会社名」「氏名」など別名も受け付ける
-      const columns = type === 'contacts' ? CONTACT_IMPORT_COLUMNS : CSV_HEADER_KEYS[type];
+      // CSV: 企業は「企業名」、連絡先は「会社名」「氏名」など別名も受け付ける
+      const columns =
+        type === 'accounts' ? ACCOUNT_IMPORT_COLUMNS :
+        type === 'contacts' ? CONTACT_IMPORT_COLUMNS :
+        CSV_HEADER_KEYS[type];
       rows = parseCsv(raw, columns);
     } else {
       // JSON: { data: [...] } または [...]
@@ -104,29 +114,32 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row) continue;
-        const name = toStr(row.name ?? row['会社名']);
+        const name = toStr(row['会社名'] ?? row['企業名'] ?? row['企業'] ?? row['会社']);
         if (!name) {
-          results.errors.push({ row: i + 1, message: '会社名がありません' });
+          results.errors.push({
+            row: i + 1,
+            message: '会社名（または企業名）がありません。CSVの1行目に「会社名」または「企業名」の列があるか確認してください。',
+          });
           results.skipped++;
           continue;
         }
         try {
           const data = {
             name,
-            industry: toStr(row.industry ?? row['業種']) || undefined,
-            website: toStr(row.website ?? row['Webサイト']) || undefined,
-            phone: toStr(row.phone ?? row['電話番号']) || undefined,
-            email: toStr(row.email ?? row['メール']) || undefined,
-            address: toStr(row.address ?? row['住所']) || undefined,
-            city: toStr(row.city ?? row['市区町村']) || undefined,
-            state: toStr(row.state ?? row['都道府県']) || undefined,
-            postalCode: toStr(row.postalCode ?? row['郵便番号']) || undefined,
-            country: toStr(row.country ?? row['国']) || '日本',
-            employeeCount: toNum(row.employeeCount ?? row['従業員数']),
-            annualRevenue: toNum(row.annualRevenue ?? row['年間売上']),
-            status: (toStr(row.status ?? row['ステータス']) || 'prospect') as 'prospect' | 'active' | 'inactive' | 'churned',
-            description: toStr(row.description ?? row['説明']) || undefined,
-            tags: toStr(row.tags ?? row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
+            industry: toStr(row['業種']) || undefined,
+            website: toStr(row['Webサイト']) || undefined,
+            phone: toStr(row['電話番号']) || undefined,
+            email: toStr(row['メール']) || undefined,
+            address: toStr(row['住所']) || undefined,
+            city: toStr(row['市区町村']) || undefined,
+            state: toStr(row['都道府県']) || undefined,
+            postalCode: toStr(row['郵便番号']) || undefined,
+            country: toStr(row['国']) || '日本',
+            employeeCount: toNum(row['従業員数']),
+            annualRevenue: toNum(row['年間売上']),
+            status: (toStr(row['ステータス']) || 'prospect') as 'prospect' | 'active' | 'inactive' | 'churned',
+            description: toStr(row['説明']) || undefined,
+            tags: toStr(row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
           };
           accountSchema.parse(data);
           await prisma.account.create({
