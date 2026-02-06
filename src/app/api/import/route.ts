@@ -16,11 +16,12 @@ const CSV_HEADER_KEYS = {
   deals: EXPORT_COLUMNS.deals.map((c) => c.header),
 };
 
-// 企業アカウントインポートで受け付ける列の別名（会社名/企業名など）
+// 企業アカウントインポートで受け付ける列の別名（会社名/企業名・英語含む）
 const ACCOUNT_IMPORT_COLUMNS = [
-  '会社名', '企業名', '企業', '会社',
-  '業種', 'Webサイト', '電話番号', 'メール', '住所', '市区町村', '都道府県', '郵便番号', '国',
+  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', 'Company', 'company',
+  '業種', 'Webサイト', '電話番号', 'メール', 'メールアドレス', '住所', '市区町村', '都道府県', '郵便番号', '国',
   '従業員数', '年間売上', 'ステータス', '説明', 'タグ',
+  'Email', 'email', 'Phone', 'phone',
 ];
 
 // 連絡先インポートで受け付ける列の別名（会社名/氏名・英語含む）
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
     let rows: Record<string, string>[];
 
     let contactHeaderRow: string[] = [];
+    let accountHeaderRow: string[] = [];
     if (isCsv) {
       // CSV: 企業は「企業名」、連絡先は「会社名」「氏名」など別名も受け付ける
       const columns =
@@ -81,6 +83,10 @@ export async function POST(request: NextRequest) {
         const parsed = parseCsv(raw, columns, { returnHeaders: true });
         rows = parsed.rows;
         contactHeaderRow = parsed.headerRow;
+      } else if (type === 'accounts') {
+        const parsed = parseCsv(raw, columns, { returnHeaders: true });
+        rows = parsed.rows;
+        accountHeaderRow = parsed.headerRow;
       } else {
         rows = parseCsv(raw, columns);
       }
@@ -123,11 +129,18 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         if (!row) continue;
-        const name = toStr(row['会社名'] ?? row['企業名'] ?? row['企業'] ?? row['会社']);
+        const name = toStr(
+          row['会社名'] ?? row['企業名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['Company'] ?? row['company']
+        );
         if (!name) {
+          const baseMsg = '会社名（または企業名）がありません。CSVの1行目に「会社名」または「企業名」の列があるか確認してください。';
+          const isFirstError = !results.errors.some((e) => e.message.includes('会社名（または企業名）がありません'));
+          const hint = isFirstError && accountHeaderRow.length > 0
+            ? ` 検出した1行目の列: [${accountHeaderRow.join(', ')}]`
+            : '';
           results.errors.push({
             row: i + 1,
-            message: '会社名（または企業名）がありません。CSVの1行目に「会社名」または「企業名」の列があるか確認してください。',
+            message: baseMsg + hint,
           });
           results.skipped++;
           continue;
@@ -137,8 +150,8 @@ export async function POST(request: NextRequest) {
             name,
             industry: toStr(row['業種']) || undefined,
             website: toStr(row['Webサイト']) || undefined,
-            phone: toStr(row['電話番号']) || undefined,
-            email: toStr(row['メール']) || undefined,
+            phone: toStr(row['電話番号'] ?? row['Phone'] ?? row['phone']) || undefined,
+            email: toStr(row['メール'] ?? row['メールアドレス'] ?? row['Email'] ?? row['email']) || undefined,
             address: toStr(row['住所']) || undefined,
             city: toStr(row['市区町村']) || undefined,
             state: toStr(row['都道府県']) || undefined,
