@@ -83,7 +83,12 @@ export function ImportExport() {
         skipped: data.skipped,
         errors: data.errors || [],
       });
-      toast.success(`${data.created}件をインポートしました`);
+      const total = data.total ?? data.created + data.skipped;
+      if (data.skipped > 0) {
+        toast.success(`${data.created}件作成、${data.skipped}件スキップ（エラーあり）`, { duration: 5000 });
+      } else {
+        toast.success(`${data.created}件をインポートしました`);
+      }
     } catch {
       toast.error('インポートに失敗しました');
     } finally {
@@ -145,7 +150,8 @@ export function ImportExport() {
             データのインポート
           </CardTitle>
           <CardDescription>
-            CSVまたはJSONファイルからデータを取り込みます。連絡先・取引は企業名で既存の企業と紐付けます
+            CSVまたはJSONファイルからデータを取り込みます。連絡先・取引は企業名で既存の企業と紐付けます。
+            <span className="block mt-1 text-muted-foreground/90">※インポートは既存データに<strong>追加</strong>するだけです。既存の企業・連絡先は削除されません。</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -185,6 +191,9 @@ export function ImportExport() {
             <p className="text-sm text-muted-foreground">
               CSVはエクスポートした形式（日本語ヘッダー）に対応しています
             </p>
+            <p className="text-xs text-muted-foreground">
+              データが見えない場合: ローカルと本番で同じデータベース（DATABASE_URL）か確認してください。Supabase利用時はダッシュボードの「Backups」から復元できる場合があります。
+            </p>
           </div>
 
           {importResult && (
@@ -192,6 +201,21 @@ export function ImportExport() {
               <p className="font-medium">
                 取り込み完了: {importResult.created}件作成 / {importResult.skipped}件スキップ
               </p>
+              {importResult.skipped > 0 && (
+                <p className="text-sm text-amber-600">
+                  スキップされた行は下記のエラーをご確認ください。該当行を修正して再インポートできます。
+                </p>
+              )}
+              {importResult.created > 10 && importType === 'accounts' && (
+                <p className="text-sm text-muted-foreground">
+                  企業一覧は1ページ10件表示です。2ページ目以降にもデータがあります。一覧のページ送りで全件ご確認ください。
+                </p>
+              )}
+              {importResult.created > 10 && importType === 'contacts' && (
+                <p className="text-sm text-muted-foreground">
+                  連絡先一覧もページ区切りで表示されています。全件はページを進めてご確認ください。
+                </p>
+              )}
               {importResult.errors.length > 0 && (
                 <div className="flex items-start gap-2 text-sm text-amber-600">
                   <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />

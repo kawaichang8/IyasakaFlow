@@ -354,7 +354,7 @@ export async function POST(request: NextRequest) {
       created: results.created,
       skipped: results.skipped,
       total: rows.length,
-      errors: results.errors.slice(0, 50), // 最大50件まで返す
+      errors: results.errors.slice(0, 100), // 最大100件まで返す（スキップ理由の確認用）
     });
   } catch (error) {
     console.error('Import error:', error);
