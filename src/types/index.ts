@@ -191,6 +191,41 @@ export type DealStage =
   | 'closed_lost';  // 失注
 
 // ============================================
+// 案件（Opportunity / SFA）関連の型
+// ============================================
+
+/**
+ * 案件ステージ（SFA Kanban用）
+ */
+export type OpportunityStage =
+  | 'lead'         // リード
+  | 'proposal'     // 提案
+  | 'negotiation'  // 交渉
+  | 'won'          // 成約
+  | 'lost';        // 失注
+
+/**
+ * 案件
+ */
+export interface Opportunity {
+  id: string;
+  name: string;
+  stage: OpportunityStage;
+  amount: number;
+  probability: number;
+  expectedCloseDate?: string | null;
+  notes?: string | null;
+  accountId: string;
+  contactId?: string | null;
+  ownerId?: string | null;
+  account?: { id: string; name: string };
+  contact?: { id: string; name: string } | null;
+  owner?: { id: string; name: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
 // インタラクション（活動履歴）関連の型
 // ============================================
 

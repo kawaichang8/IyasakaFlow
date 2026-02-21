@@ -46,6 +46,9 @@ export async function GET(_request: NextRequest) {
       
       // 要フォロー（7日以上連絡していない企業）
       needToFollowUpRaw,
+      
+      // 案件（Opportunity）統計
+      opportunitiesActive,
     ] = await Promise.all([
       // アカウント
       prisma.account.count(),
@@ -162,6 +165,12 @@ export async function GET(_request: NextRequest) {
         _max: { date: true },
         where: { accountId: { not: null } },
       }),
+      
+      // 案件: 進行中（WON/LOST 以外）
+      prisma.opportunity.findMany({
+        where: { stage: { notIn: ['WON', 'LOST'] } },
+        select: { amount: true, probability: true, stage: true },
+      }),
     ]);
 
     // KPI計算
@@ -236,9 +245,24 @@ export async function GET(_request: NextRequest) {
         };
       });
 
+    // 案件サマリー計算
+    const oppTotalAmount = opportunitiesActive.reduce((s, o) => s + Number(o.amount), 0);
+    const oppAvgProbability = opportunitiesActive.length
+      ? Math.round(opportunitiesActive.reduce((s, o) => s + o.probability, 0) / opportunitiesActive.length)
+      : 0;
+    const oppWeightedAmount = opportunitiesActive.reduce(
+      (s, o) => s + Number(o.amount) * (o.probability / 100), 0,
+    );
+
     // レスポンス構築
     const response = {
       needToFollowUp,
+      opportunitySummary: {
+        activeCount: opportunitiesActive.length,
+        totalAmount: oppTotalAmount,
+        avgProbability: oppAvgProbability,
+        weightedAmount: Math.round(oppWeightedAmount),
+      },
       kpi: {
         pipelineTotal,
         weightedPipeline,
@@ -279,8 +303,23 @@ export async function GET(_request: NextRequest) {
     };
 
     return NextResponse.json({ data: response });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching dashboard data:', error);
+    const message = error instanceof Error ? error.message : '';
+    const isSchemaError =
+      typeof message === 'string' &&
+      (message.includes('column') ||
+        message.includes('does not exist') ||
+        message.includes('Unknown arg') ||
+        (error as { code?: string })?.code === 'P2010');
+    if (isSchemaError) {
+      return NextResponse.json(
+        {
+          error: 'データベースのスキーマがアプリと一致していません。本番環境で「npx prisma db push」を実行してマイグレーションを適用してください。',
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: 'ダッシュボードデータの取得に失敗しました' },
       { status: 500 }

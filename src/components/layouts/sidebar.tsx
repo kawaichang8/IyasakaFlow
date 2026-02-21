@@ -9,6 +9,7 @@ import {
   Building2,
   Users,
   TrendingUp,
+  Kanban,
   CheckSquare,
   Activity,
   Mail,
@@ -53,6 +54,11 @@ const mainNavItems: NavItem[] = [
     title: 'パイプライン',
     href: '/deals',
     icon: TrendingUp,
+  },
+  {
+    title: '案件',
+    href: '/opportunities',
+    icon: Kanban,
   },
   {
     title: 'タスク',

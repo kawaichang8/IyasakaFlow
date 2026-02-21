@@ -35,9 +35,10 @@ model User {
   sessions      Session[]
   
   // 所有するレコード
-  ownedAccounts Account[] @relation("AccountOwner")
-  ownedContacts Contact[] @relation("ContactOwner")
-  ownedDeals    Deal[]    @relation("DealOwner")
+  ownedAccounts      Account[]      @relation("AccountOwner")
+  ownedContacts      Contact[]      @relation("ContactOwner")
+  ownedDeals         Deal[]         @relation("DealOwner")
+  ownedOpportunities Opportunity[]  @relation("OpportunityOwner")
   
   // 割り当てられたタスク
   assignedTasks Task[]    @relation("TaskAssignee")
@@ -174,6 +175,7 @@ model Account {
   // リレーション
   contacts        Contact[]
   deals           Deal[]
+  opportunities   Opportunity[]
   interactions    Interaction[]
   tasks           Task[]
   emails          Email[]
@@ -259,6 +261,7 @@ model Contact {
   
   // リレーション
   deals           Deal[]
+  opportunities   Opportunity[]
   interactions    Interaction[]
   tasks           Task[]
   emails          Email[]
@@ -358,6 +361,59 @@ enum DealStage {
   ON_HOLD       // 保留
   CLOSED_WON    // 成約
   CLOSED_LOST   // 失注
+}
+
+// ==============================================
+// 案件管理（Opportunity / SFA）
+// ==============================================
+
+/// 案件（Opportunity）- SFA 機能
+model Opportunity {
+  id                String            @id @default(cuid())
+  name              String
+
+  // ステージ
+  stage             OpportunityStage  @default(LEAD)
+
+  // 金額・確度
+  amount            Decimal           @default(0) @db.Decimal(15, 0)
+  probability       Int               @default(0)  // 0-100
+
+  // 予定クローズ日
+  expectedCloseDate DateTime?
+
+  // メモ
+  notes             String?           @db.Text
+
+  // 関連先
+  accountId         String
+  account           Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  contactId         String?
+  contact           Contact?          @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  // 担当者
+  ownerId           String?
+  owner             User?             @relation("OpportunityOwner", fields: [ownerId], references: [id])
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([stage])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([ownerId])
+  @@index([expectedCloseDate])
+  @@map("opportunities")
+}
+
+/// 案件ステージ（SFA）
+enum OpportunityStage {
+  LEAD          // リード
+  PROPOSAL      // 提案
+  NEGOTIATION   // 交渉
+  WON           // 成約
+  LOST          // 失注
 }
 
 // ==============================================

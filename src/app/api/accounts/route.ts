@@ -23,6 +23,10 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     
+    // クエリの accountType / status はフロントから小文字で来るため、Prisma enum の大文字に変換
+    const accountTypeUpper = accountType ? accountType.toUpperCase() : '';
+    const statusUpper = status ? status.toUpperCase() : '';
+    
     // WHERE条件を構築
     const where: Prisma.AccountWhereInput = {};
     
@@ -37,11 +41,11 @@ export async function GET(request: NextRequest) {
     if (industry) {
       where.industry = industry;
     }
-    if (accountType) {
-      where.accountType = accountType as any;
+    if (accountTypeUpper) {
+      where.accountType = accountTypeUpper as any;
     }
-    if (status) {
-      where.status = status as any;
+    if (statusUpper) {
+      where.status = statusUpper as any;
     }
     
     // 要フォロー: 7日以上連絡していない企業に絞る

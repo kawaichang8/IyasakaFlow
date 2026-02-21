@@ -62,8 +62,16 @@ interface NeedToFollowUp {
   lastActivityAt: string | null;
 }
 
+interface OpportunitySummary {
+  activeCount: number;
+  totalAmount: number;
+  avgProbability: number;
+  weightedAmount: number;
+}
+
 interface DashboardData {
   needToFollowUp: NeedToFollowUp[];
+  opportunitySummary: OpportunitySummary;
   kpi: KPIData;
   pipeline: PipelineData[];
   monthlyRevenue: MonthlyData[];

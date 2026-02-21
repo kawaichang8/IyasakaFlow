@@ -19,8 +19,8 @@ import {
 } from '@/components/features/dashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Lightbulb, ArrowRight } from 'lucide-react';
-import { formatRelativeTime } from '@/lib/utils';
+import { AlertCircle, Lightbulb, ArrowRight, Kanban, Target } from 'lucide-react';
+import { formatRelativeTime, formatCurrency } from '@/lib/utils';
 
 const TIPS = [
   { text: '活動を記録するときは「結果」と「次のアクション」を書くと、翌日から何をすべきか明確になります。', link: '/activities', label: '活動を記録' },
@@ -99,6 +99,44 @@ export default function DashboardPage() {
       ) : dashboardData ? (
         <KPICards data={dashboardData.kpi} />
       ) : null}
+
+      {/* 案件サマリー */}
+      {!isLoading && dashboardData?.opportunitySummary && (
+        <Card className="border-indigo-200 dark:border-indigo-900">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <Kanban className="h-4 w-4" />
+              案件サマリー（SFA）
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <p className="text-xs text-muted-foreground">進行中</p>
+                <p className="text-lg font-bold">{dashboardData.opportunitySummary.activeCount}<span className="text-xs font-normal ml-0.5">件</span></p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">総額</p>
+                <p className="text-lg font-bold">{formatCurrency(dashboardData.opportunitySummary.totalAmount)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">加重金額</p>
+                <p className="text-lg font-bold text-blue-600">{formatCurrency(dashboardData.opportunitySummary.weightedAmount)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">平均確度</p>
+                <div className="flex items-center gap-1">
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-lg font-bold">{dashboardData.opportunitySummary.avgProbability}%</p>
+                </div>
+              </div>
+            </div>
+            <Button variant="link" size="sm" className="mt-2 p-0" asChild>
+              <Link href="/opportunities">案件ボードを見る →</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* グラフセクション */}
       <div className="grid gap-6 lg:grid-cols-2">
