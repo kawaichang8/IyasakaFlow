@@ -11,7 +11,7 @@ dist/
 # Testing
 coverage/
 
-# Environment variables
+# Environment variables（パスワード等を含むためコミットしない）
 .env
 .env.local
 .env.development.local
