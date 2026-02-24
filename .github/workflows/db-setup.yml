@@ -1,0 +1,43 @@
+# ローカルを使わずに本番DBのスキーマ反映・管理者作成を行うワークフロー
+# 使い方: GitHub の Actions タブ → "DB Setup" → "Run workflow" で手動実行
+
+name: DB Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_db_push:
+        description: 'Prisma db push（テーブル作成・更新）'
+        required: true
+        type: boolean
+        default: true
+      run_create_admin:
+        description: '管理者ユーザー作成（admin@crm-app.example.com）'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Prisma db push
+        if: inputs.run_db_push
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma db push
+
+      - name: Create admin user
+        if: inputs.run_create_admin
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run create:admin
