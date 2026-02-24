@@ -46,29 +46,18 @@ const providers: NextAuthConfig['providers'] = [
       const password = parsedCredentials.data.password;
 
       // ユーザーを検索
-      let user;
-      try {
-        user = await prisma.user.findUnique({
-          where: { email },
-        });
-      } catch (err) {
-        console.error('[auth] DB error in authorize:', err instanceof Error ? err.message : String(err));
-        return null;
-      }
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
 
-      if (!user) {
-        console.warn('[auth] authorize: user not found', { email });
-        return null;
-      }
-      if (!user.password) {
-        console.warn('[auth] authorize: user has no password', { email });
+      if (!user || !user.password) {
         return null;
       }
 
       // パスワードを検証
       const passwordMatch = await bcrypt.compare(password, user.password);
+
       if (!passwordMatch) {
-        console.warn('[auth] authorize: password mismatch', { email });
         return null;
       }
 
