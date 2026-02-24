@@ -49,6 +49,12 @@ export async function GET(_request: NextRequest) {
       
       // 案件（Opportunity）統計
       opportunitiesActive,
+
+      // 連絡先の総数（はじめにガイド用）
+      totalContacts,
+
+      // 今月の活動数
+      activityCountThisMonth,
     ] = await Promise.all([
       // アカウント
       prisma.account.count(),
@@ -61,12 +67,12 @@ export async function GET(_request: NextRequest) {
         },
       }),
       
-      // 全取引（パイプライン計算用）
+      // 全取引（パイプライン計算用 + 次のアクション提案用）
       prisma.deal.findMany({
         where: {
           stage: { notIn: ['CLOSED_WON', 'CLOSED_LOST'] },
         },
-        select: { value: true, probability: true, stage: true },
+        select: { id: true, name: true, value: true, probability: true, stage: true, expectedCloseDate: true },
       }),
       
       // 今月の成約
@@ -171,6 +177,14 @@ export async function GET(_request: NextRequest) {
         where: { stage: { notIn: ['WON', 'LOST'] } },
         select: { amount: true, probability: true, stage: true },
       }),
+
+      // 連絡先の総数
+      prisma.contact.count(),
+
+      // 今月の活動数（目標進捗用）
+      prisma.interaction.count({
+        where: { date: { gte: startOfMonth } },
+      }),
     ]);
 
     // KPI計算
@@ -254,8 +268,29 @@ export async function GET(_request: NextRequest) {
       (s, o) => s + Number(o.amount) * (o.probability / 100), 0,
     );
 
+    // 次のアクション提案用パイプライン
+    const activePipeline = allDeals.map((d) => ({
+      id: d.id,
+      name: d.name,
+      stage: d.stage,
+      value: Number(d.value),
+      expectedCloseDate: d.expectedCloseDate?.toISOString() ?? null,
+    }));
+
     // レスポンス構築
     const response = {
+      stepCounts: {
+        accounts: totalAccounts,
+        contacts: totalContacts,
+        deals: allDeals.length,
+        tasks: pendingTasks + completedTasksThisMonth,
+      },
+      activePipeline,
+      goalActuals: {
+        wonThisMonth,
+        wonDealCount: wonDealsThisMonth.length,
+        activityCount: activityCountThisMonth,
+      },
       needToFollowUp,
       opportunitySummary: {
         activeCount: opportunitiesActive.length,

@@ -16,6 +16,9 @@ import {
   RecentActivitySkeleton,
   TodaysTasks,
   TodaysTasksSkeleton,
+  GettingStarted,
+  NextActions,
+  SalesGoalCard,
 } from '@/components/features/dashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -93,12 +96,33 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* はじめにガイド（データが少ないうちだけ表示） */}
+      {!isLoading && dashboardData?.stepCounts && (
+        <GettingStarted counts={dashboardData.stepCounts} />
+      )}
+
+      {/* 次のアクション提案 */}
+      {!isLoading && dashboardData && (
+        <NextActions
+          needToFollowUp={dashboardData.needToFollowUp ?? []}
+          pipeline={dashboardData.activePipeline ?? []}
+          todaysTasks={dashboardData.todaysTasks ?? []}
+          pendingTasks={dashboardData.kpi?.pendingTasks ?? 0}
+          overdueTasks={dashboardData.kpi?.overdueTasks ?? 0}
+        />
+      )}
+
       {/* KPIカード */}
       {isLoading ? (
         <KPICardsSkeleton />
       ) : dashboardData ? (
         <KPICards data={dashboardData.kpi} />
       ) : null}
+
+      {/* 月間目標の進捗 */}
+      {!isLoading && dashboardData?.goalActuals && (
+        <SalesGoalCard actuals={dashboardData.goalActuals} />
+      )}
 
       {/* 案件サマリー */}
       {!isLoading && dashboardData?.opportunitySummary && (

@@ -11,3 +11,6 @@ export {
   NotificationDropdownContent,
   NotificationBell,
 } from './notification-dropdown';
+export { GettingStarted } from './getting-started';
+export { NextActions } from './next-actions';
+export { SalesGoalCard } from './sales-goal-card';

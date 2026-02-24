@@ -125,6 +125,30 @@ model Team {
 }
 
 // ==============================================
+// 月間目標（営業KPI管理）
+// ==============================================
+
+/// 月間目標
+model SalesGoal {
+  id              String   @id @default(cuid())
+  userId          String
+  year            Int
+  month           Int      // 1-12
+
+  // 目標値
+  targetRevenue   BigInt   @default(0)     // 成約額目標（円）
+  targetDealCount Int      @default(0)     // 成約件数目標
+  targetActivity  Int      @default(0)     // 活動数目標（電話+メール+訪問）
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, year, month])
+  @@index([userId])
+  @@map("sales_goals")
+}
+
+// ==============================================
 // 顧客管理（Account & Contact）
 // ==============================================
 

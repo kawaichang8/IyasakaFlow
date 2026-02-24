@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
+import { StageAdviceCard } from '@/components/features/sales-advisor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -172,6 +173,9 @@ export function DealDetail({ dealId }: DealDetailProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* ステージ別アドバイス */}
+      <StageAdviceCard stage={deal.stage} variant="deal" />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* 取引情報 */}
