@@ -1,3 +1,4 @@
+import './load-env';
 import { PrismaClient, UserRole, AccountStatus, InfluenceLevel, ContactStatus, DealStage, TaskPriority, TaskStatus, InteractionType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 

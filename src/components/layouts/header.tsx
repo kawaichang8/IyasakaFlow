@@ -8,6 +8,12 @@ import { Search, User, Menu, Plus, LogOut, Settings, Building2, Users, TrendingU
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -75,16 +81,39 @@ export function Header({ onMenuClick }: HeaderProps) {
       />
 
       {/* 右側: アクション */}
-      <div className="flex items-center gap-2">
-        {/* クイック追加ボタン */}
-        <QuickAddMenu />
+      <TooltipProvider delayDuration={400}>
+        <div className="flex items-center gap-2">
+          {/* クイック追加ボタン */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div><QuickAddMenu /></div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>企業・連絡先・案件・タスクなどをすばやく作成</p>
+            </TooltipContent>
+          </Tooltip>
 
-        {/* 通知 */}
-        <NotificationBell />
+          {/* 通知 */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div><NotificationBell /></div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>今日のタスクや期限が近い案件をお知らせ</p>
+            </TooltipContent>
+          </Tooltip>
 
-        {/* ユーザーメニュー */}
-        <UserMenu />
-      </div>
+          {/* ユーザーメニュー */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div><UserMenu /></div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>プロフィール・設定・ログアウト</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     </header>
   );
 }

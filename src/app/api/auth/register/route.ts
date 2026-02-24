@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
           {
             error:
               'データベースの準備ができていません。ターミナルで npm run db:push を実行してください。',
+            errorCode: error.code,
           },
           { status: 500 }
         );
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
             process.env.NODE_ENV === 'development'
               ? `データベースエラー: ${error.message}`
               : '登録に失敗しました',
+          errorCode: error.code,
         },
         { status: 500 }
       );
@@ -107,6 +109,13 @@ export async function POST(request: NextRequest) {
       process.env.NODE_ENV === 'development' && error instanceof Error
         ? error.message
         : '登録に失敗しました';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const errorCode =
+      error instanceof Error && 'code' in error
+        ? String((error as NodeJS.ErrnoException).code)
+        : undefined;
+    return NextResponse.json(
+      { error: message, ...(errorCode && { errorCode }) },
+      { status: 500 }
+    );
   }
 }

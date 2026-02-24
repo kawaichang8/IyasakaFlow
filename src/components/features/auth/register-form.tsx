@@ -68,7 +68,8 @@ export function RegisterForm() {
           (result.details && typeof result.details === 'string'
             ? result.details
             : '登録に失敗しました');
-        setError(message);
+        const suffix = result.errorCode ? ` [${result.errorCode}]` : '';
+        setError(message + suffix);
         return;
       }
 
@@ -89,7 +90,7 @@ export function RegisterForm() {
       // セッションを確実に反映させるためフルページ遷移でダッシュボードへ
       window.location.href = '/dashboard';
     } catch (err) {
-      setError('登録に失敗しました。もう一度お試しください。');
+      setError('登録に失敗しました。ネットワークを確認してもう一度お試しください。');
     }
   };
 
