@@ -41,7 +41,7 @@ import {
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import { useAccounts, useUpdateAccount } from '@/hooks/use-accounts';
 import { AccountForm } from './account-form';
-import { ACCOUNT_TYPES, ACCOUNT_STATUSES } from '@/lib/validations/account';
+import { ACCOUNT_TYPES, ACCOUNT_STATUSES, ACCOUNT_INDUSTRIES } from '@/lib/validations/account';
 import type { AccountFormData } from '@/lib/validations/account';
 import type { Account, QueryParams } from '@/types';
 
@@ -328,7 +328,7 @@ function AccountTableRow({ account, onEdit }: { account: AccountWithCounts; onEd
         />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
-        {account.industry || '-'}
+        <InlineIndustrySelect id={account.id} value={account.industry ?? null} />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground lg:table-cell">
         <InlineAccountTypeSelect id={account.id} value={account.accountType ?? null} />
@@ -517,6 +517,34 @@ function InlineAccountTypeSelect({ id, value }: { id: string; value: string | nu
         {ACCOUNT_TYPES.map((t) => (
           <SelectItem key={t.value} value={t.value}>
             {t.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/**
+ * 業種のインライン編集用セレクト
+ */
+function InlineIndustrySelect({ id, value }: { id: string; value: string | null }) {
+  const update = useUpdateAccount(id);
+  const current = value ?? 'none';
+  return (
+    <Select
+      value={current}
+      onValueChange={(v) =>
+        update.mutate({ industry: v === 'none' ? null : v })
+      }
+    >
+      <SelectTrigger className="h-8 w-[160px] text-xs">
+        <SelectValue placeholder="未選択" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">未選択</SelectItem>
+        {ACCOUNT_INDUSTRIES.map((ind) => (
+          <SelectItem key={ind} value={ind}>
+            {ind}
           </SelectItem>
         ))}
       </SelectContent>
