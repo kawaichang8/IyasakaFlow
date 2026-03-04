@@ -18,7 +18,7 @@ const CSV_HEADER_KEYS = {
 
 // 企業アカウントインポートで受け付ける列の別名（会社名/企業名・宛名・英語含む）
 const ACCOUNT_IMPORT_COLUMNS = [
-  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company',
+  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company', 'Name', 'name',
   '業種', 'Webサイト', '電話番号', '電話', 'メール', 'メールアドレス', '住所', '住所２', '市区町村', '都道府県', '郵便番号', '〒', '国',
   '従業員数', '年間売上', 'ステータス', '説明', '備考', 'タグ',
   'Email', 'email', 'Phone', 'phone',
@@ -27,7 +27,7 @@ const ACCOUNT_IMPORT_COLUMNS = [
 
 // 企業で「正式な項目」として使う列（これ以外は説明にまとめる）
 const ACCOUNT_FIELD_KEYS = new Set([
-  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company',
+  '会社名', '企業名', '企業', '会社', '組織名', '組織', '取引先', '宛名', 'Company', 'company', 'Name', 'name',
   '業種', 'Webサイト', '電話番号', '電話', 'メール', 'メールアドレス', '住所', '住所２', '市区町村', '都道府県', '郵便番号', '〒', '国',
   '従業員数', '年間売上', 'ステータス', '説明', '備考', 'タグ', 'Email', 'email', 'Phone', 'phone',
 ]);
@@ -148,10 +148,10 @@ export async function POST(request: NextRequest) {
         const row = rows[i];
         if (!row) continue;
         const name = toStr(
-          row['会社名'] ?? row['企業名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['宛名'] ?? row['Company'] ?? row['company']
+          row['会社名'] ?? row['企業名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['宛名'] ?? row['Company'] ?? row['company'] ?? row['Name'] ?? row['name']
         );
         if (!name) {
-          const baseMsg = '会社名（または企業名）がありません。CSVの1行目に「会社名」または「企業名」の列があるか確認してください。';
+          const baseMsg = '会社名（または企業名）がありません。CSVの1行目に「会社名」「企業名」「Company」「Name」のいずれかの列があり、その列に値が入っているか確認してください。';
           const isFirstError = !results.errors.some((e) => e.message.includes('会社名（または企業名）がありません'));
           const hint = isFirstError && accountHeaderRow.length > 0
             ? ` 検出した1行目の列: [${accountHeaderRow.join(', ')}]`
