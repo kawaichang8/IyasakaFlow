@@ -160,6 +160,7 @@ model Account {
   website         String?
   phone           String?
   email           String?
+  socialProfiles  Json?         @default("{}")  // LinkedIn / X / Facebook 等
   
   // 住所
   address         String?

@@ -62,6 +62,7 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
       website: '',
       phone: '',
       email: '',
+      socialProfiles: { linkedin: '', twitter: '', facebook: '' },
       address: '',
       city: '',
       state: '',
@@ -326,6 +327,40 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
           {errors.email && (
             <p className="text-sm text-destructive">{errors.email.message}</p>
           )}
+        </div>
+
+        {/* SNS */}
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">SNS</Label>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="account-socialProfiles.linkedin" className="text-xs text-muted-foreground">LinkedIn</Label>
+              <Input
+                id="account-socialProfiles.linkedin"
+                type="url"
+                placeholder="https://linkedin.com/company/..."
+                {...register('socialProfiles.linkedin')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="account-socialProfiles.twitter" className="text-xs text-muted-foreground">X (Twitter)</Label>
+              <Input
+                id="account-socialProfiles.twitter"
+                type="url"
+                placeholder="https://x.com/..."
+                {...register('socialProfiles.twitter')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="account-socialProfiles.facebook" className="text-xs text-muted-foreground">Facebook</Label>
+              <Input
+                id="account-socialProfiles.facebook"
+                type="url"
+                placeholder="https://facebook.com/..."
+                {...register('socialProfiles.facebook')}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

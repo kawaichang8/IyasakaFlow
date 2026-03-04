@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Target,
   Clock,
+  Linkedin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -258,6 +259,44 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
                 </a>
               </div>
             )}
+            {account.socialProfiles && (account.socialProfiles.linkedin || account.socialProfiles.twitter || account.socialProfiles.facebook) && (
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm text-muted-foreground">SNS</p>
+                <div className="flex flex-wrap gap-2">
+                  {account.socialProfiles.linkedin && (
+                    <a
+                      href={account.socialProfiles.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-[#0A66C2]/10 px-2 py-1 text-sm text-[#0A66C2] hover:underline"
+                    >
+                      <Linkedin className="h-4 w-4" />
+                      LinkedIn
+                    </a>
+                  )}
+                  {account.socialProfiles.twitter && (
+                    <a
+                      href={account.socialProfiles.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-black/10 px-2 py-1 text-sm hover:underline dark:bg-white/10"
+                    >
+                      X
+                    </a>
+                  )}
+                  {account.socialProfiles.facebook && (
+                    <a
+                      href={account.socialProfiles.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-[#1877F2]/10 px-2 py-1 text-sm text-[#1877F2] hover:underline"
+                    >
+                      Facebook
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
             {account.address && (
               <div className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
@@ -392,6 +431,7 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
 }
 
 function accountToFormData(account: Account): Partial<AccountFormData> & { id: string } {
+  const sp = account.socialProfiles;
   return {
     id: account.id,
     name: account.name,
@@ -399,6 +439,11 @@ function accountToFormData(account: Account): Partial<AccountFormData> & { id: s
     website: account.website ?? '',
     phone: account.phone ?? '',
     email: account.email ?? '',
+    socialProfiles: {
+      linkedin: sp?.linkedin ?? '',
+      twitter: sp?.twitter ?? '',
+      facebook: sp?.facebook ?? '',
+    },
     address: account.address ?? '',
     city: account.city ?? '',
     state: account.state ?? '',

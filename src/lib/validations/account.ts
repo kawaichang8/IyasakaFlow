@@ -90,6 +90,15 @@ export const ACCOUNT_INDUSTRIES = [
 export type AccountIndustry = (typeof ACCOUNT_INDUSTRIES)[number];
 
 /**
+ * SNSプロフィール（企業・連絡先で共通の形）
+ */
+export const socialProfilesSchema = z.object({
+  linkedin: z.string().url().optional().nullable().or(z.literal('')),
+  twitter: z.string().url().optional().nullable().or(z.literal('')),
+  facebook: z.string().url().optional().nullable().or(z.literal('')),
+});
+
+/**
  * アカウント作成/更新スキーマ
  */
 export const accountSchema = z.object({
@@ -199,6 +208,10 @@ export const accountSchema = z.object({
     .array(z.string())
     .optional()
     .default([]),
+  
+  socialProfiles: socialProfilesSchema
+    .optional()
+    .default({}),
   
   customFields: z
     .record(z.any())

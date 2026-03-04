@@ -130,6 +130,7 @@ export async function GET(
       website: account.website,
       phone: account.phone,
       email: account.email,
+      socialProfiles: (account as { socialProfiles?: unknown }).socialProfiles ?? {},
       address: account.address,
       city: account.city,
       state: account.state,
@@ -244,6 +245,7 @@ export async function PATCH(
     if (validatedData.website !== undefined) updateData.website = validatedData.website || null;
     if (validatedData.phone !== undefined) updateData.phone = validatedData.phone || null;
     if (validatedData.email !== undefined) updateData.email = validatedData.email || null;
+    if (validatedData.socialProfiles !== undefined) updateData.socialProfiles = (validatedData.socialProfiles as Record<string, unknown>) || {};
     if (validatedData.address !== undefined) updateData.address = validatedData.address || null;
     if (validatedData.city !== undefined) updateData.city = validatedData.city || null;
     if (validatedData.state !== undefined) updateData.state = validatedData.state || null;
@@ -279,6 +281,10 @@ export async function PATCH(
       id: updatedAccount.id,
       name: updatedAccount.name,
       industry: updatedAccount.industry,
+      website: updatedAccount.website,
+      phone: updatedAccount.phone,
+      email: updatedAccount.email,
+      socialProfiles: (updatedAccount as { socialProfiles?: unknown }).socialProfiles ?? {},
       accountType: updatedAccount.accountType?.toLowerCase() ?? null,
       status: updatedAccount.status.toLowerCase(),
       owner: updatedAccount.owner,

@@ -53,6 +53,7 @@ interface AccountWithCounts extends Account {
 
 /** APIのアカウントをフォームの initialData に変換 */
 function accountToFormData(account: Account): Partial<AccountFormData> & { id: string } {
+  const sp = account.socialProfiles;
   return {
     id: account.id,
     name: account.name,
@@ -60,6 +61,11 @@ function accountToFormData(account: Account): Partial<AccountFormData> & { id: s
     website: account.website ?? '',
     phone: account.phone ?? '',
     email: account.email ?? '',
+    socialProfiles: {
+      linkedin: sp?.linkedin ?? '',
+      twitter: sp?.twitter ?? '',
+      facebook: sp?.facebook ?? '',
+    },
     address: account.address ?? '',
     city: account.city ?? '',
     state: account.state ?? '',
