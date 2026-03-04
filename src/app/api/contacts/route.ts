@@ -148,10 +148,35 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching contacts:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    const code = (error as { code?: string }).code;
+    const isSchemaError =
+      typeof message === 'string' &&
+      (message.includes('column') ||
+        message.includes('does not exist') ||
+        message.includes('Unknown arg') ||
+        code === 'P2010');
+
+    if (isSchemaError) {
+      return NextResponse.json(
+        {
+          error:
+            'データベースのスキーマがアプリと一致していません。GitHub Actions の「DB Setup」で Prisma db push を実行してください。',
+          details: message,
+          code,
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { error: '連絡先の取得に失敗しました' },
+      {
+        error: '連絡先の取得に失敗しました',
+        details: message,
+        code,
+      },
       { status: 500 }
     );
   }
