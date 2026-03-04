@@ -179,14 +179,17 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
         <div className="space-y-2">
           <Label>取引先種別</Label>
           <Select
-            value={accountType || ''}
-            onValueChange={(value) => setValue('accountType', value === '' ? undefined : (value as any))}
+            // Radix Selectでは空文字の value が禁止のため、未選択は 'none' で表現する
+            value={accountType ?? 'none'}
+            onValueChange={(value) =>
+              setValue('accountType', value === 'none' ? undefined : (value as any))
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="種別を選択（任意）" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">未選択</SelectItem>
+              <SelectItem value="none">未選択</SelectItem>
               {ACCOUNT_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>
                   {t.label}
