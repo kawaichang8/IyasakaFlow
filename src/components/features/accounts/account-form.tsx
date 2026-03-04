@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 interface AccountFormProps {
   initialData?: Partial<AccountFormData> & { id?: string };
   onSuccess?: () => void;
+  onSaveAndNext?: () => void;
   onCancel?: () => void;
 }
 
@@ -79,7 +80,7 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
   const status = watch('status');
   const accountType = watch('accountType');
 
-  const onSubmit = async (data: AccountFormData) => {
+  const submitCore = async (data: AccountFormData, mode: 'save' | 'next') => {
     try {
       const isEdit = !!initialData?.id;
       const url = isEdit ? `/api/accounts/${initialData.id}` : '/api/accounts';
@@ -126,15 +127,22 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
       }
 
       queryClient.invalidateQueries({ queryKey: [ACCOUNTS_QUERY_KEY] });
-      onSuccess?.();
+      if (mode === 'next') {
+        onSaveAndNext?.();
+      } else {
+        onSuccess?.();
+      }
     } catch (error) {
       console.error('Error saving account:', error);
       toast.error(error instanceof Error ? error.message : '保存に失敗しました');
     }
   };
 
+  const handleSave = handleSubmit((data) => submitCore(data, 'save'));
+  const handleSaveAndNext = handleSubmit((data) => submitCore(data, 'next'));
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSave} className="space-y-6">
       {/* 基本情報セクション */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium">基本情報</h3>
@@ -418,8 +426,18 @@ export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormPro
             キャンセル
           </Button>
         )}
+        {onSaveAndNext && initialData?.id && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSaveAndNext}
+            disabled={isSubmitting}
+          >
+            保存して次へ
+          </Button>
+        )}
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? '保存中...' : initialData ? '更新' : '作成'}
+          {isSubmitting ? '保存中...' : initialData?.id ? '更新' : '作成'}
         </Button>
       </div>
     </form>

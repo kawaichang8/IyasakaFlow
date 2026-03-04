@@ -31,10 +31,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
-import { useAccounts } from '@/hooks/use-accounts';
+import { useAccounts, useUpdateAccount } from '@/hooks/use-accounts';
 import { AccountForm } from './account-form';
-import { ACCOUNT_TYPES } from '@/lib/validations/account';
+import { ACCOUNT_TYPES, ACCOUNT_STATUSES } from '@/lib/validations/account';
 import type { AccountFormData } from '@/lib/validations/account';
 import type { Account, QueryParams } from '@/types';
 
@@ -79,6 +86,7 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
   const { data, isLoading, error } = useAccounts(params as QueryParams | undefined);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [editingAccount, setEditingAccount] = useState<AccountWithCounts | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const accounts = (data?.data ?? []) as AccountWithCounts[];
   const pagination = data?.pagination;
 
@@ -115,6 +123,25 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
     );
   }
 
+  const handleCloseEdit = () => {
+    setEditingAccount(null);
+    setEditingIndex(null);
+  };
+
+  const handleSaveAndNext = () => {
+    if (editingIndex == null) {
+      handleCloseEdit();
+      return;
+    }
+    const nextIndex = editingIndex + 1;
+    if (nextIndex < accounts.length) {
+      setEditingIndex(nextIndex);
+      setEditingAccount(accounts[nextIndex]);
+    } else {
+      handleCloseEdit();
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* 表示切替 */}
@@ -136,7 +163,7 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
       </div>
 
       {/* 編集ダイアログ */}
-      <Dialog open={!!editingAccount} onOpenChange={(open) => !open && setEditingAccount(null)}>
+      <Dialog open={!!editingAccount} onOpenChange={(open) => !open && handleCloseEdit()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>企業アカウントを編集</DialogTitle>
@@ -147,8 +174,9 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
           {editingAccount && (
             <AccountForm
               initialData={accountToFormData(editingAccount)}
-              onSuccess={() => setEditingAccount(null)}
-              onCancel={() => setEditingAccount(null)}
+              onSuccess={handleCloseEdit}
+              onSaveAndNext={handleSaveAndNext}
+              onCancel={handleCloseEdit}
             />
           )}
         </DialogContent>
@@ -173,7 +201,7 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
               </tr>
             </thead>
             <tbody>
-              {accounts.map((account) => (
+              {accounts.map((account, index) => (
                 <AccountTableRow
                   key={account.id}
                   account={{
@@ -181,7 +209,10 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
                     contactCount: account.contactCount ?? 0,
                     totalDealValue: account.totalDealValue ?? 0,
                   }}
-                  onEdit={() => setEditingAccount(account)}
+                  onEdit={() => {
+                    setEditingIndex(index);
+                    setEditingAccount(account);
+                  }}
                 />
               ))}
             </tbody>
@@ -192,7 +223,7 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
       {/* カード表示 */}
       {viewMode === 'card' && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {accounts.map((account) => (
+          {accounts.map((account, index) => (
             <AccountCard
               key={account.id}
               account={{
@@ -200,7 +231,10 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
                 contactCount: account.contactCount ?? 0,
                 totalDealValue: account.totalDealValue ?? 0,
               }}
-              onEdit={() => setEditingAccount(account)}
+              onEdit={() => {
+                setEditingIndex(index);
+                setEditingAccount(account);
+              }}
             />
           ))}
         </div>
@@ -267,10 +301,10 @@ function AccountTableRow({ account, onEdit }: { account: AccountWithCounts; onEd
         {account.industry || '-'}
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground lg:table-cell">
-        {account.accountType ? ACCOUNT_TYPES.find((t) => t.value === account.accountType)?.label ?? account.accountType : '-'}
+        <InlineAccountTypeSelect id={account.id} value={account.accountType ?? null} />
       </td>
       <td className="hidden px-4 py-3 lg:table-cell">
-        <StatusBadge status={account.status} />
+        <InlineStatusSelect id={account.id} value={account.status} />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground xl:table-cell" title={account.lastActivityAt ? formatDate(account.lastActivityAt) : undefined}>
         {account.lastActivityAt ? formatRelativeTime(account.lastActivityAt) : '—'}
@@ -376,7 +410,7 @@ function AccountCard({ account, onEdit }: { account: Account & { contactCount?: 
 }
 
 /**
- * ステータスバッジ
+ * ステータスバッジ（従来の表示用）
  */
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, 'default' | 'success' | 'warning' | 'secondary'> = {
@@ -405,6 +439,58 @@ function StatusBadge({ status }: { status: string }) {
     <Badge variant={variants[status] || 'default'}>
       {labels[status] || status}
     </Badge>
+  );
+}
+
+/**
+ * ステータスのインライン編集用セレクト
+ */
+function InlineStatusSelect({ id, value }: { id: string; value: string }) {
+  const update = useUpdateAccount(id);
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => update.mutate({ status: v as any })}
+    >
+      <SelectTrigger className="h-8 w-[120px] text-xs">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {ACCOUNT_STATUSES.map((s) => (
+          <SelectItem key={s.value} value={s.value}>
+            {s.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/**
+ * 取引先種別のインライン編集用セレクト
+ */
+function InlineAccountTypeSelect({ id, value }: { id: string; value: string | null }) {
+  const update = useUpdateAccount(id);
+  const current = value ?? 'none';
+  return (
+    <Select
+      value={current}
+      onValueChange={(v) =>
+        update.mutate({ accountType: v === 'none' ? undefined : (v as any) })
+      }
+    >
+      <SelectTrigger className="h-8 w-[140px] text-xs">
+        <SelectValue placeholder="未選択" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">未選択</SelectItem>
+        {ACCOUNT_TYPES.map((t) => (
+          <SelectItem key={t.value} value={t.value}>
+            {t.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
