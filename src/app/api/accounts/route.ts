@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const accountType = searchParams.get('accountType') || '';
     const status = searchParams.get('status') || '';
     const needFollowUp = searchParams.get('needFollowUp') === '1' || searchParams.get('needFollowUp') === 'true';
+    const duplicates = searchParams.get('duplicates') === '1' || searchParams.get('duplicates') === 'true';
     const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     
@@ -59,6 +60,36 @@ export async function GET(request: NextRequest) {
       });
       const recentAccountIds = recent.map((r) => r.accountId).filter((id): id is string => id != null);
       where.id = recentAccountIds.length > 0 ? { notIn: recentAccountIds } : undefined;
+    }
+    
+    // 「重複候補（会社名が同じ）」フィルター
+    if (duplicates) {
+      const allForDup = await prisma.account.findMany({
+        where,
+        select: { name: true },
+      });
+      const counts = new Map<string, number>();
+      for (const a of allForDup) {
+        const key = a.name;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      const duplicateNames = Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([name]) => name);
+
+      if (duplicateNames.length === 0) {
+        return NextResponse.json({
+          data: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+
+      where.name = { in: duplicateNames };
     }
     
     // 総件数を取得

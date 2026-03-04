@@ -11,6 +11,7 @@ type AccountFilters = {
   accountType?: string;
   status?: string;
   needFollowUp?: string;
+  duplicates?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -37,13 +38,20 @@ function AccountsPageContent() {
     accountType: get('accountType'),
     status: get('status'),
     needFollowUp: get('needFollowUp'),
+    duplicates: get('duplicates'),
     page: getNumber('page') ?? 1,
     limit: getNumber('limit') || 10,
     sortBy: get('sortBy') || 'updatedAt',
     sortOrder: (get('sortOrder') as 'asc' | 'desc') || 'desc',
   }), [get, getNumber]);
 
-  const activeFilterCount = [get('industry'), get('accountType'), get('status'), get('needFollowUp') === '1' ? '1' : null].filter(Boolean).length;
+  const activeFilterCount = [
+    get('industry'),
+    get('accountType'),
+    get('status'),
+    get('needFollowUp') === '1' ? '1' : null,
+    get('duplicates') === '1' ? '1' : null,
+  ].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
@@ -54,6 +62,7 @@ function AccountsPageContent() {
         accountType={get('accountType') ?? ''}
         status={get('status') ?? ''}
         needFollowUp={get('needFollowUp') ?? ''}
+        duplicates={get('duplicates') ?? ''}
         sortBy={get('sortBy') || 'updatedAt'}
         sortOrder={(get('sortOrder') as 'asc' | 'desc') || 'desc'}
         limit={getNumber('limit') || 10}

@@ -41,6 +41,7 @@ interface AccountHeaderProps {
   accountType: string;
   status: string;
   needFollowUp?: string;
+  duplicates?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   limit?: number;
@@ -61,6 +62,7 @@ export function AccountHeader({
   accountType,
   status,
   needFollowUp = '',
+  duplicates = '',
   sortBy = 'updatedAt',
   sortOrder = 'desc',
   limit = 10,
@@ -229,6 +231,21 @@ export function AccountHeader({
                 <SelectContent>
                   <SelectItem value="all">すべて</SelectItem>
                   <SelectItem value="1">要フォロー（7日以上連絡なし）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>データ品質</Label>
+              <Select
+                value={duplicates || 'all'}
+                onValueChange={(v) => onFilterChange('duplicates', v === 'all' ? undefined : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="すべて" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  <SelectItem value="1">重複候補（会社名が同じ）</SelectItem>
                 </SelectContent>
               </Select>
             </div>
