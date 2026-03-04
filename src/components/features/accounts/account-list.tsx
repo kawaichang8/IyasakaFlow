@@ -153,7 +153,12 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
     );
     if (!ok) return;
     try {
-      await Promise.all(selectedIds.map((id) => deleteAccount.mutateAsync(id)));
+      // 接続数制限を避けるため、1件ずつ順番に削除する
+      // （まとめて多数のリクエストを飛ばさない）
+      for (const id of selectedIds) {
+        // eslint-disable-next-line no-await-in-loop
+        await deleteAccount.mutateAsync(id);
+      }
       setSelectedIds([]);
     } catch (e) {
       const message =
