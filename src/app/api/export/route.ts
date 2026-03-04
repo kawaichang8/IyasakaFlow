@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const accountTypesParam = searchParams.get('accountTypes');
     const includeUnknownParam = searchParams.get('includeUnknown');
     const includeUnknown = includeUnknownParam === '1' || includeUnknownParam === 'true';
+    const contactStatusesParam = searchParams.get('contactStatuses');
 
     if (!['accounts', 'contacts', 'deals'].includes(type)) {
       return NextResponse.json(
@@ -125,7 +126,24 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'contacts') {
+      let where: any = undefined;
+
+      if (contactStatusesParam) {
+        const rawStatuses = contactStatusesParam
+          .split(',')
+          .map((v) => v.trim().toUpperCase())
+          .filter(Boolean);
+        const allowed = ['ACTIVE', 'INACTIVE', 'LEFT', 'DO_NOT_CONTACT', 'OPTED_OUT', 'BOUNCED'];
+        const statuses = rawStatuses.filter((s) => allowed.includes(s));
+        if (statuses.length > 0) {
+          where = {
+            status: { in: statuses },
+          };
+        }
+      }
+
       const contacts = await prisma.contact.findMany({
+        where,
         take: MAX_EXPORT,
         orderBy: { name: 'asc' },
         include: {

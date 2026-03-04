@@ -20,7 +20,10 @@ type ExportFormat = 'csv' | 'json';
 const EXPORT_INCLUDE_NOTES_KEY = 'export:csv:includeNotes';
 const EXPORT_ACCOUNTS_MODE_KEY = 'export:accounts:csvMode';
 const EXPORT_ACCOUNTS_TYPES_KEY = 'export:accounts:csvTypes';
+const EXPORT_CONTACTS_MODE_KEY = 'export:contacts:csvMode';
+const EXPORT_CONTACTS_STATUSES_KEY = 'export:contacts:csvStatuses';
 type AccountsExportMode = 'all' | 'customersOnly' | 'custom';
+type ContactsExportMode = 'all' | 'activeOnly' | 'custom';
 
 const EXPORT_OPTIONS: { type: ExportType; label: string; icon: React.ElementType }[] = [
   { type: 'accounts', label: '企業アカウント', icon: Building2 },
@@ -73,6 +76,8 @@ export function ImportExport() {
   const [includeNotes, setIncludeNotes] = useState(true);
   const [accountsExportMode, setAccountsExportMode] = useState<AccountsExportMode>('all');
   const [accountsExportTypes, setAccountsExportTypes] = useState<string[]>(['customer', 'prospect', 'partner']);
+  const [contactsExportMode, setContactsExportMode] = useState<ContactsExportMode>('all');
+  const [contactsExportStatuses, setContactsExportStatuses] = useState<string[]>(['active']);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -128,6 +133,48 @@ export function ImportExport() {
       const next = exists ? prev.filter((v) => v !== value) : [...prev, value];
       if (typeof window !== 'undefined') {
         localStorage.setItem(EXPORT_ACCOUNTS_TYPES_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const storedMode = localStorage.getItem(EXPORT_CONTACTS_MODE_KEY) as ContactsExportMode | null;
+    if (storedMode === 'all' || storedMode === 'activeOnly' || storedMode === 'custom') {
+      setContactsExportMode(storedMode);
+    }
+
+    const rawStatuses = localStorage.getItem(EXPORT_CONTACTS_STATUSES_KEY);
+    if (rawStatuses) {
+      try {
+        const parsed = JSON.parse(rawStatuses) as string[];
+        if (Array.isArray(parsed)) {
+          const known = ['active', 'inactive', 'left', 'do_not_contact', 'opted_out', 'bounced'];
+          const filtered = parsed.filter((s) => known.includes(s));
+          if (filtered.length) {
+            setContactsExportStatuses(filtered);
+          }
+        }
+      } catch {
+        // 無視
+      }
+    }
+  }, []);
+
+  const handleChangeContactsExportMode = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const mode = e.target.value as ContactsExportMode;
+    setContactsExportMode(mode);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(EXPORT_CONTACTS_MODE_KEY, mode);
+  };
+
+  const toggleContactStatus = (value: string) => {
+    setContactsExportStatuses((prev) => {
+      const exists = prev.includes(value);
+      const next = exists ? prev.filter((v) => v !== value) : [...prev, value];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(EXPORT_CONTACTS_STATUSES_KEY, JSON.stringify(next));
       }
       return next;
     });
@@ -266,6 +313,45 @@ export function ImportExport() {
                       className="h-3 w-3 rounded border-muted-foreground"
                       checked={accountsExportTypes.includes(opt.value)}
                       onChange={() => toggleAccountType(opt.value)}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+            <label className="flex flex-col gap-1">
+              <span className="font-medium">連絡先CSVに含める対象</span>
+              <select
+                className="mt-1 w-full rounded-md border px-2 py-1 text-xs"
+                value={contactsExportMode}
+                onChange={handleChangeContactsExportMode}
+              >
+                <option value="all">すべての連絡先（ステータスに関係なく含める）</option>
+                <option value="activeOnly">アクティブな連絡先のみ</option>
+                <option value="custom">カスタム（下のステータスチェックで指定）</option>
+              </select>
+            </label>
+            <p className="text-[11px] text-muted-foreground">
+              メール配信リストなどで、特定のステータス（例: 退職・配信停止）を除外したい場合はカスタムを選んでください。
+            </p>
+            {contactsExportMode === 'custom' && (
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                {[
+                  { value: 'active', label: 'アクティブ' },
+                  { value: 'inactive', label: '非アクティブ' },
+                  { value: 'left', label: '退職' },
+                  { value: 'do_not_contact', label: '連絡不可' },
+                  { value: 'opted_out', label: '配信停止' },
+                  { value: 'bounced', label: 'メール不達（バウンス）' },
+                ].map((opt) => (
+                  <label key={opt.value} className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-muted-foreground"
+                      checked={contactsExportStatuses.includes(opt.value)}
+                      onChange={() => toggleContactStatus(opt.value)}
                     />
                     <span>{opt.label}</span>
                   </label>

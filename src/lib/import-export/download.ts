@@ -8,6 +8,8 @@ export type ExportFormat = 'csv' | 'json';
 const EXPORT_INCLUDE_NOTES_KEY = 'export:csv:includeNotes';
 const EXPORT_ACCOUNTS_MODE_KEY = 'export:accounts:csvMode'; // 'all' | 'customersOnly' | 'custom'
 const EXPORT_ACCOUNTS_TYPES_KEY = 'export:accounts:csvTypes'; // JSON配列: ['customer', ...]
+const EXPORT_CONTACTS_MODE_KEY = 'export:contacts:csvMode'; // 'all' | 'activeOnly' | 'custom'
+const EXPORT_CONTACTS_STATUSES_KEY = 'export:contacts:csvStatuses'; // JSON配列: ['active', ...]
 
 /**
  * エクスポートを実行し、ファイルをダウンロード
@@ -41,6 +43,24 @@ export function downloadExport(type: ExportType, format: ExportFormat): void {
           }
         } catch {
           // 破損している場合は何もしない（全件出力）
+        }
+      }
+    } else if (type === 'contacts') {
+      const mode = (localStorage.getItem(EXPORT_CONTACTS_MODE_KEY) || 'all') as 'all' | 'activeOnly' | 'custom';
+      if (mode === 'activeOnly') {
+        url += '&contactStatuses=active';
+      } else if (mode === 'custom') {
+        try {
+          const raw = localStorage.getItem(EXPORT_CONTACTS_STATUSES_KEY);
+          const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+          const statuses = Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string' && v) : [];
+          const known = ['active', 'inactive', 'left', 'do_not_contact', 'opted_out', 'bounced'];
+          const selected = statuses.filter((s) => known.includes(s));
+          if (selected.length > 0) {
+            url += `&contactStatuses=${encodeURIComponent(selected.join(','))}`;
+          }
+        } catch {
+          // 無視（全件出力）
         }
       }
     }
