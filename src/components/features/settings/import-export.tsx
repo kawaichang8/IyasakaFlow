@@ -18,6 +18,8 @@ type ExportType = 'accounts' | 'contacts' | 'deals';
 type ExportFormat = 'csv' | 'json';
 
 const EXPORT_INCLUDE_NOTES_KEY = 'export:csv:includeNotes';
+const EXPORT_ACCOUNTS_MODE_KEY = 'export:accounts:csvMode';
+type AccountsExportMode = 'all' | 'customersOnly';
 
 const EXPORT_OPTIONS: { type: ExportType; label: string; icon: React.ElementType }[] = [
   { type: 'accounts', label: '企業アカウント', icon: Building2 },
@@ -34,6 +36,13 @@ function triggerExport(type: ExportType, format: ExportFormat) {
     const includeNotes = localStorage.getItem(EXPORT_INCLUDE_NOTES_KEY) !== 'false';
     const flag = includeNotes ? '1' : '0';
     url += `&includeNotes=${flag}`;
+
+    if (type === 'accounts') {
+      const mode = (localStorage.getItem(EXPORT_ACCOUNTS_MODE_KEY) || 'all') as AccountsExportMode;
+      if (mode === 'customersOnly') {
+        url += '&customersOnly=1';
+      }
+    }
   }
   if (format === 'csv') {
     window.open(url, '_blank');
@@ -61,6 +70,7 @@ export function ImportExport() {
   const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: { row: number; message: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [includeNotes, setIncludeNotes] = useState(true);
+  const [accountsExportMode, setAccountsExportMode] = useState<AccountsExportMode>('all');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -77,6 +87,21 @@ export function ImportExport() {
     setIncludeNotes(checked);
     if (typeof window === 'undefined') return;
     localStorage.setItem(EXPORT_INCLUDE_NOTES_KEY, checked ? 'true' : 'false');
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem(EXPORT_ACCOUNTS_MODE_KEY) as AccountsExportMode | null;
+    if (stored === 'all' || stored === 'customersOnly') {
+      setAccountsExportMode(stored);
+    }
+  }, []);
+
+  const handleChangeAccountsExportMode = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const mode = e.target.value as AccountsExportMode;
+    setAccountsExportMode(mode);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(EXPORT_ACCOUNTS_MODE_KEY, mode);
   };
 
   const handleExport = (type: ExportType, format: ExportFormat) => {
@@ -176,6 +201,22 @@ export function ImportExport() {
             </label>
             <p className="text-xs text-muted-foreground">
               OFFにすると、連絡先の「メモ」や企業・案件の「説明」列はCSVに出力されません（JSONエクスポートには含まれます）。
+            </p>
+          </div>
+          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+            <label className="flex flex-col gap-1">
+              <span className="font-medium">企業CSVに含める対象</span>
+              <select
+                className="mt-1 w-full rounded-md border px-2 py-1 text-xs"
+                value={accountsExportMode}
+                onChange={handleChangeAccountsExportMode}
+              >
+                <option value="all">すべての企業（顧客・見込み・下請け・業者などを含む）</option>
+                <option value="customersOnly">顧客・見込みの企業のみ（下請け・業者などを除外）</option>
+              </select>
+            </label>
+            <p className="text-[11px] text-muted-foreground">
+              メール配信リストなどで、仕入先・下請け・業者を除外したい場合は「顧客・見込みのみ」を選択してください。
             </p>
           </div>
         </CardContent>

@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     const format = (searchParams.get('format') || 'json') as ExportFormat;
     const includeNotesParam = searchParams.get('includeNotes');
     const includeNotes = includeNotesParam === null ? true : !(includeNotesParam === '0' || includeNotesParam === 'false');
+    const customersOnlyParam = searchParams.get('customersOnly');
+    const customersOnly = customersOnlyParam === '1' || customersOnlyParam === 'true';
 
     if (!['accounts', 'contacts', 'deals'].includes(type)) {
       return NextResponse.json(
@@ -35,7 +37,19 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'accounts') {
+      const where = customersOnly
+        ? {
+            OR: [
+              { accountType: 'CUSTOMER' },
+              { accountType: 'PROSPECT' },
+              { accountType: 'PARTNER' },
+              { accountType: null },
+            ],
+          }
+        : undefined;
+
       const accounts = await prisma.account.findMany({
+        where,
         take: MAX_EXPORT,
         orderBy: { name: 'asc' },
         include: {
