@@ -335,11 +335,12 @@ export async function DELETE(
       },
     });
     
+    // 既に削除済みの場合は成功扱い（idempotent DELETE）
     if (!existingAccount) {
-      return NextResponse.json(
-        { error: 'アカウントが見つかりません' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        message: 'アカウントを削除しました',
+        alreadyDeleted: true,
+      });
     }
     
     // 関連データがある場合は警告（Cascadeで削除される）
