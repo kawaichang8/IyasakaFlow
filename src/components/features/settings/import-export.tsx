@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Download, Upload, FileText, Building2, Users, TrendingUp, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 type ExportType = 'accounts' | 'contacts' | 'deals';
 type ExportFormat = 'csv' | 'json';
 
+const EXPORT_INCLUDE_NOTES_KEY = 'export:csv:includeNotes';
+
 const EXPORT_OPTIONS: { type: ExportType; label: string; icon: React.ElementType }[] = [
   { type: 'accounts', label: '企業アカウント', icon: Building2 },
   { type: 'contacts', label: '連絡先', icon: Users },
@@ -27,7 +29,12 @@ const EXPORT_OPTIONS: { type: ExportType; label: string; icon: React.ElementType
  * エクスポート実行（ダウンロード）
  */
 function triggerExport(type: ExportType, format: ExportFormat) {
-  const url = `/api/export?type=${type}&format=${format}`;
+  let url = `/api/export?type=${type}&format=${format}`;
+  if (format === 'csv' && typeof window !== 'undefined') {
+    const includeNotes = localStorage.getItem(EXPORT_INCLUDE_NOTES_KEY) !== 'false';
+    const flag = includeNotes ? '1' : '0';
+    url += `&includeNotes=${flag}`;
+  }
   if (format === 'csv') {
     window.open(url, '_blank');
     return;
@@ -53,6 +60,24 @@ export function ImportExport() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: { row: number; message: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [includeNotes, setIncludeNotes] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem(EXPORT_INCLUDE_NOTES_KEY);
+    if (stored === 'false') {
+      setIncludeNotes(false);
+    } else {
+      setIncludeNotes(true);
+    }
+  }, []);
+
+  const handleToggleIncludeNotes = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setIncludeNotes(checked);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(EXPORT_INCLUDE_NOTES_KEY, checked ? 'true' : 'false');
+  };
 
   const handleExport = (type: ExportType, format: ExportFormat) => {
     triggerExport(type, format);
@@ -139,6 +164,20 @@ export function ImportExport() {
               </div>
             </div>
           ))}
+          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-muted-foreground"
+                checked={includeNotes}
+                onChange={handleToggleIncludeNotes}
+              />
+              <span className="font-medium">メモ・説明をCSVに含める</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              OFFにすると、連絡先の「メモ」や企業・案件の「説明」列はCSVに出力されません（JSONエクスポートには含まれます）。
+            </p>
+          </div>
         </CardContent>
       </Card>
 

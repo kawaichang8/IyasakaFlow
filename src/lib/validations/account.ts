@@ -49,7 +49,9 @@ export const accountStatusSchema = z.enum([
  * ステータス表示用
  */
 export const ACCOUNT_STATUSES = [
-  { value: 'prospect', label: '見込み（未成約）' },
+  // 「種別」の prospect が「見込み企業」なので、
+  // ステータス側は「今の状態」としてニュアンスを分ける
+  { value: 'prospect', label: '新規リード' },
   { value: 'trial', label: 'トライアル中' },
   { value: 'customer', label: '顧客（成約済み）' },
   { value: 'active', label: '取引中（アクティブ）' },

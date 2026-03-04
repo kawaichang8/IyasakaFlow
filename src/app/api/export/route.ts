@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = (searchParams.get('type') || 'accounts') as ExportType;
     const format = (searchParams.get('format') || 'json') as ExportFormat;
+    const includeNotesParam = searchParams.get('includeNotes');
+    const includeNotes = includeNotesParam === null ? true : !(includeNotesParam === '0' || includeNotesParam === 'false');
 
     if (!['accounts', 'contacts', 'deals'].includes(type)) {
       return NextResponse.json(
@@ -63,7 +65,11 @@ export async function GET(request: NextRequest) {
       }));
 
       if (format === 'csv') {
-        const columns = EXPORT_COLUMNS.accounts.map((c) => ({
+        const baseColumns = EXPORT_COLUMNS.accounts;
+        const filteredColumns = includeNotes
+          ? baseColumns
+          : baseColumns.filter((c) => c.key !== 'description');
+        const columns = filteredColumns.map((c) => ({
           key: c.key as keyof (typeof rows)[0],
           header: c.header,
         }));
@@ -110,7 +116,11 @@ export async function GET(request: NextRequest) {
       }));
 
       if (format === 'csv') {
-        const columns = EXPORT_COLUMNS.contacts.map((c) => ({
+        const baseColumns = EXPORT_COLUMNS.contacts;
+        const filteredColumns = includeNotes
+          ? baseColumns
+          : baseColumns.filter((c) => c.key !== 'notes');
+        const columns = filteredColumns.map((c) => ({
           key: c.key as keyof (typeof rows)[0],
           header: c.header,
         }));
@@ -156,7 +166,11 @@ export async function GET(request: NextRequest) {
       }));
 
       if (format === 'csv') {
-        const columns = EXPORT_COLUMNS.deals.map((c) => ({
+        const baseColumns = EXPORT_COLUMNS.deals;
+        const filteredColumns = includeNotes
+          ? baseColumns
+          : baseColumns.filter((c) => c.key !== 'description');
+        const columns = filteredColumns.map((c) => ({
           key: c.key as keyof (typeof rows)[0],
           header: c.header,
         }));

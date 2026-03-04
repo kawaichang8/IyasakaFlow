@@ -5,11 +5,18 @@
 export type ExportType = 'accounts' | 'contacts' | 'deals';
 export type ExportFormat = 'csv' | 'json';
 
+const EXPORT_INCLUDE_NOTES_KEY = 'export:csv:includeNotes';
+
 /**
  * エクスポートを実行し、ファイルをダウンロード
  */
 export function downloadExport(type: ExportType, format: ExportFormat): void {
-  const url = `/api/export?type=${type}&format=${format}`;
+  let url = `/api/export?type=${type}&format=${format}`;
+  if (format === 'csv' && typeof window !== 'undefined') {
+    const includeNotes = localStorage.getItem(EXPORT_INCLUDE_NOTES_KEY) !== 'false';
+    const flag = includeNotes ? '1' : '0';
+    url += `&includeNotes=${flag}`;
+  }
   if (format === 'csv') {
     window.open(url, '_blank');
     return;
