@@ -298,8 +298,14 @@ export async function PATCH(
     }
     
     console.error('Error updating account:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    const code = (error as { code?: string }).code;
     return NextResponse.json(
-      { error: 'アカウントの更新に失敗しました' },
+      {
+        error: 'アカウントの更新に失敗しました',
+        details: message,
+        code,
+      },
       { status: 500 }
     );
   }
@@ -353,8 +359,14 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error deleting account:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    const code = (error as { code?: string }).code;
     return NextResponse.json(
-      { error: 'アカウントの削除に失敗しました' },
+      {
+        error: 'アカウントの削除に失敗しました',
+        details: message,
+        code,
+      },
       { status: 500 }
     );
   }
