@@ -189,6 +189,8 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="px-4 py-3 text-left text-sm font-medium">会社名</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">電話</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">メール</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">業種</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">種別</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">ステータス</th>
@@ -282,20 +284,48 @@ function AccountTableRow({ account, onEdit }: { account: AccountWithCounts; onEd
   return (
     <tr className="border-b transition-colors hover:bg-muted/50">
       <td className="px-4 py-3">
-        <Link 
-          href={`/accounts/${account.id}`}
-          className="flex items-center gap-3 font-medium hover:underline"
-        >
+        <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
             <Building2 className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <p className="font-medium">{account.name}</p>
+          <div className="min-w-0">
+            <InlineTextField
+              id={account.id}
+              field="name"
+              value={account.name}
+              placeholder="会社名を入力"
+              className="font-medium"
+            />
             {account.website && (
-              <p className="text-xs text-muted-foreground">{account.website}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {account.website}
+              </p>
             )}
+            <Link
+              href={`/accounts/${account.id}`}
+              className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              詳細
+              <ExternalLink className="h-3 w-3" />
+            </Link>
           </div>
-        </Link>
+        </div>
+      </td>
+      <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
+        <InlineTextField
+          id={account.id}
+          field="phone"
+          value={account.phone ?? null}
+          placeholder="—"
+        />
+      </td>
+      <td className="hidden px-4 py-3 text-sm text-muted-foreground lg:table-cell">
+        <InlineTextField
+          id={account.id}
+          field="email"
+          value={account.email ?? null}
+          placeholder="—"
+        />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
         {account.industry || '-'}
@@ -491,6 +521,69 @@ function InlineAccountTypeSelect({ id, value }: { id: string; value: string | nu
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+/**
+ * テキスト項目のインライン編集用フィールド
+ */
+function InlineTextField({
+  id,
+  field,
+  value,
+  placeholder,
+  className,
+}: {
+  id: string;
+  field: 'name' | 'phone' | 'email';
+  value: string | null;
+  placeholder?: string;
+  className?: string;
+}) {
+  const update = useUpdateAccount(id);
+  const [local, setLocal] = useState(value ?? '');
+  const [editing, setEditing] = useState(false);
+
+  const commit = () => {
+    const trimmed = local.trim();
+    if (trimmed === (value ?? '')) {
+      setEditing(false);
+      return;
+    }
+    update.mutate({ [field]: trimmed || null } as any);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        className={`w-full truncate text-left text-sm hover:underline ${className ?? ''}`}
+        onClick={() => setEditing(true)}
+      >
+        {value && value.trim().length > 0 ? value : placeholder ?? '—'}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      className={`w-full rounded border px-1 py-0.5 text-sm ${className ?? ''}`}
+      autoFocus
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commit();
+        }
+        if (e.key === 'Escape') {
+          setLocal(value ?? '');
+          setEditing(false);
+        }
+      }}
+    />
   );
 }
 
