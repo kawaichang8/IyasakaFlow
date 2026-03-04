@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { contactSchema, type ContactFormData } from '@/lib/validations/contact';
+import { contactSchema, CONTACT_SOURCES, type ContactFormData } from '@/lib/validations/contact';
 import { useAccounts } from '@/hooks/use-accounts';
 import { useQueryClient } from '@tanstack/react-query';
 import { CONTACTS_QUERY_KEY } from '@/hooks/use-contacts';
@@ -47,18 +47,22 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
       email: '',
       phone: '',
       mobile: '',
+      website: '',
       role: '',
       department: '',
       company: '',
       influenceLevel: 'other',
+      contactSource: undefined,
       status: 'active',
       tags: [],
       notes: '',
+      socialProfiles: { linkedin: '', twitter: '', facebook: '' },
       ...initialData,
     },
   });
 
   const influenceLevel = watch('influenceLevel');
+  const contactSource = watch('contactSource');
   const status = watch('status');
 
   const onSubmit = async (data: ContactFormData) => {
@@ -187,6 +191,30 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
           </p>
         </div>
 
+        {/* 初回接触経路（名刺・対面等） */}
+        <div className="space-y-2">
+          <Label>初回接触経路</Label>
+          <Select
+            value={contactSource ?? 'none'}
+            onValueChange={(v) => setValue('contactSource', v === 'none' ? undefined : (v as any))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="選択（任意）" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">未選択</SelectItem>
+              {CONTACT_SOURCES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            名刺・対面・紹介など、どのように知り合ったか
+          </p>
+        </div>
+
         {/* ステータス */}
         <div className="space-y-2">
           <Label>ステータス</Label>
@@ -245,6 +273,54 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
               placeholder="090-1234-5678"
               {...register('mobile')}
             />
+          </div>
+        </div>
+
+        {/* Webサイト */}
+        <div className="space-y-2">
+          <Label htmlFor="website">Webサイト</Label>
+          <Input
+            id="website"
+            type="url"
+            placeholder="https://example.com"
+            {...register('website')}
+          />
+          {errors.website && (
+            <p className="text-sm text-destructive">{errors.website.message}</p>
+          )}
+        </div>
+
+        {/* SNSアカウント */}
+        <div className="space-y-3">
+          <Label>SNS・プロフィール</Label>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="socialProfiles.linkedin" className="text-xs text-muted-foreground">LinkedIn</Label>
+              <Input
+                id="socialProfiles.linkedin"
+                type="url"
+                placeholder="https://linkedin.com/in/..."
+                {...register('socialProfiles.linkedin')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="socialProfiles.twitter" className="text-xs text-muted-foreground">X (Twitter)</Label>
+              <Input
+                id="socialProfiles.twitter"
+                type="url"
+                placeholder="https://x.com/..."
+                {...register('socialProfiles.twitter')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="socialProfiles.facebook" className="text-xs text-muted-foreground">Facebook</Label>
+              <Input
+                id="socialProfiles.facebook"
+                type="url"
+                placeholder="https://facebook.com/..."
+                {...register('socialProfiles.facebook')}
+              />
+            </div>
           </div>
         </div>
       </div>

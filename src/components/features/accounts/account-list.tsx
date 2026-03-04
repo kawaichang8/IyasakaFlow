@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Building2, 
-  Users, 
-  TrendingUp, 
+import {
+  Building2,
+  Users,
+  TrendingUp,
   MoreHorizontal,
   ExternalLink,
   Mail,
   Phone,
   ChevronLeft,
   ChevronRight,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -406,11 +407,9 @@ function AccountTableRow({
         />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground lg:table-cell">
-        <InlineTextField
+        <InlineWebsiteField
           id={account.id}
-          field="website"
           value={account.website ?? null}
-          placeholder="https://..."
         />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
@@ -639,6 +638,102 @@ function InlineIndustrySelect({ id, value }: { id: string; value: string | null 
 }
 
 /**
+ * Webサイト列: クリックでリンクを開く。編集はペンアイコンから。
+ */
+function InlineWebsiteField({ id, value }: { id: string; value: string | null }) {
+  const update = useUpdateAccount(id);
+  const [local, setLocal] = useState(value ?? '');
+  const [editing, setEditing] = useState(false);
+
+  const commit = () => {
+    const trimmed = local.trim();
+    if (trimmed === (value ?? '')) {
+      setEditing(false);
+      return;
+    }
+    update.mutate({ website: trimmed || null });
+    setEditing(false);
+  };
+
+  const href = (() => {
+    const v = (value ?? '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) return v;
+    return `https://${v}`;
+  })();
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          className="min-w-0 flex-1 rounded border px-1 py-0.5 text-sm"
+          autoFocus
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commit();
+            }
+            if (e.key === 'Escape') {
+              setLocal(value ?? '');
+              setEditing(false);
+            }
+          }}
+          placeholder="https://..."
+        />
+      </div>
+    );
+  }
+
+  if (value && value.trim().length > 0 && href) {
+    return (
+      <div className="flex items-center gap-1">
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="min-w-0 truncate text-sm text-primary hover:underline"
+          title={value}
+        >
+          {value}
+        </a>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0"
+          onClick={(e) => {
+            e.preventDefault();
+            setEditing(true);
+          }}
+          title="Webサイトを編集"
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-sm text-muted-foreground">—</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 shrink-0"
+        onClick={() => setEditing(true)}
+        title="Webサイトを追加"
+      >
+        <Pencil className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+/**
  * テキスト項目のインライン編集用フィールド
  */
 function InlineTextField({
@@ -649,7 +744,7 @@ function InlineTextField({
   className,
 }: {
   id: string;
-  field: 'name' | 'phone' | 'email' | 'website';
+  field: 'name' | 'phone' | 'email';
   value: string | null;
   placeholder?: string;
   className?: string;

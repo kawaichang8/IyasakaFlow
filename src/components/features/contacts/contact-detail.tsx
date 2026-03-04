@@ -11,6 +11,7 @@ import {
   Plus,
   ChevronLeft,
   Linkedin,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
+import { CONTACT_SOURCES } from '@/lib/validations/contact';
 import { useContact } from '@/hooks/use-contacts';
 import { ContactForm } from './contact-form';
 import type { ContactFormData } from '@/lib/validations/contact';
@@ -92,9 +94,14 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
             <p className="text-muted-foreground">
               {[contact.role, contact.department].filter(Boolean).join(' - ') || '—'}
             </p>
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
               <InfluenceBadge level={contact.influenceLevel} />
               <StatusBadge status={contact.status} />
+              {contact.contactSource && (
+                <Badge variant="secondary">
+                  {CONTACT_SOURCES.find((s) => s.value === contact.contactSource)?.label ?? contact.contactSource}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -205,6 +212,60 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   {contact.mobile}
+                </div>
+              </div>
+            )}
+
+            {contact.website && (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Webサイト</p>
+                <a
+                  href={contact.website.startsWith('http') ? contact.website : `https://${contact.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  {contact.website}
+                </a>
+              </div>
+            )}
+
+            {contact.socialProfiles && (contact.socialProfiles.linkedin || contact.socialProfiles.twitter || contact.socialProfiles.facebook) && (
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm text-muted-foreground">SNS</p>
+                <div className="flex flex-wrap gap-2">
+                  {contact.socialProfiles.linkedin && (
+                    <a
+                      href={contact.socialProfiles.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-[#0A66C2]/10 px-2 py-1 text-sm text-[#0A66C2] hover:underline"
+                    >
+                      <Linkedin className="h-4 w-4" />
+                      LinkedIn
+                    </a>
+                  )}
+                  {contact.socialProfiles.twitter && (
+                    <a
+                      href={contact.socialProfiles.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-black/10 px-2 py-1 text-sm hover:underline dark:bg-white/10"
+                    >
+                      X
+                    </a>
+                  )}
+                  {contact.socialProfiles.facebook && (
+                    <a
+                      href={contact.socialProfiles.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-[#1877F2]/10 px-2 py-1 text-sm text-[#1877F2] hover:underline"
+                    >
+                      Facebook
+                    </a>
+                  )}
                 </div>
               </div>
             )}
@@ -369,6 +430,7 @@ function getInteractionTypeLabel(type: string): string {
 /** contact-detail 用：API連絡先をフォーム初期値に変換（contact-list の contactToFormData と同様） */
 function contactToFormData(c: ContactWithRelations): Partial<ContactFormData> & { id: string } {
   const accountId = c.account?.id ?? c.accountId;
+  const sp = c.socialProfiles as { linkedin?: string; twitter?: string; facebook?: string } | undefined;
   return {
     id: c.id,
     accountId: accountId ?? '',
@@ -378,12 +440,19 @@ function contactToFormData(c: ContactWithRelations): Partial<ContactFormData> & 
     email: c.email ?? '',
     phone: c.phone ?? '',
     mobile: c.mobile ?? '',
+    website: c.website ?? '',
     role: c.role ?? '',
     department: c.department ?? '',
     company: c.company ?? c.account?.name ?? '',
     influenceLevel: (c.influenceLevel as ContactFormData['influenceLevel']) ?? 'other',
+    contactSource: c.contactSource ?? undefined,
     status: c.status,
     tags: c.tags ?? [],
     notes: c.notes ?? '',
+    socialProfiles: {
+      linkedin: sp?.linkedin ?? '',
+      twitter: sp?.twitter ?? '',
+      facebook: sp?.facebook ?? '',
+    },
   };
 }

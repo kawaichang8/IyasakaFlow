@@ -33,12 +33,13 @@ import { formatRelativeTime } from '@/lib/utils';
 import { useContacts, useDeleteContact } from '@/hooks/use-contacts';
 import { ContactForm } from './contact-form';
 import { toast } from 'sonner';
-import type { ContactFormData } from '@/lib/validations/contact';
+import { CONTACT_SOURCES, type ContactFormData } from '@/lib/validations/contact';
 import type { Contact, QueryParams } from '@/types';
 
 /** APIの連絡先をフォームの initialData に変換 */
-function contactToFormData(contact: Contact & { account?: { id: string; name: string } }): Partial<ContactFormData> & { id: string } {
+function contactToFormData(contact: Contact & { account?: { id: string; name: string }; socialProfiles?: { linkedin?: string; twitter?: string; facebook?: string } }): Partial<ContactFormData> & { id: string } {
   const accountId = contact.account?.id ?? contact.accountId;
+  const sp = contact.socialProfiles;
   return {
     id: contact.id,
     accountId: accountId ?? '',
@@ -48,18 +49,25 @@ function contactToFormData(contact: Contact & { account?: { id: string; name: st
     email: contact.email ?? '',
     phone: contact.phone ?? '',
     mobile: contact.mobile ?? '',
+    website: contact.website ?? '',
     role: contact.role ?? '',
     department: contact.department ?? '',
     company: contact.company ?? contact.account?.name ?? '',
     influenceLevel: (contact.influenceLevel as ContactFormData['influenceLevel']) ?? 'other',
+    contactSource: contact.contactSource ?? undefined,
     status: contact.status,
     tags: contact.tags ?? [],
     notes: contact.notes ?? '',
+    socialProfiles: {
+      linkedin: sp?.linkedin ?? '',
+      twitter: sp?.twitter ?? '',
+      facebook: sp?.facebook ?? '',
+    },
   };
 }
 
 interface ContactListProps {
-  params?: { search?: string; accountId?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
+  params?: { search?: string; accountId?: string; status?: string; influenceLevel?: string; contactSource?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string };
   onPageChange?: (page: number) => void;
 }
 
@@ -168,6 +176,7 @@ export function ContactList({ params, onPageChange }: ContactListProps) {
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">会社</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">役職</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium sm:table-cell">影響力</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">接触経路</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">最終連絡</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">反応</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">ネクストアクション</th>
@@ -286,6 +295,11 @@ function ContactTableRow({
         <InfluenceBadge level={contact.influenceLevel} />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
+        {contact.contactSource
+          ? (CONTACT_SOURCES.find((s) => s.value === contact.contactSource)?.label ?? contact.contactSource)
+          : '—'}
+      </td>
+      <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
         {contact.lastContactDate ? formatRelativeTime(contact.lastContactDate) : '-'}
       </td>
       <td className="hidden max-w-[100px] truncate px-4 py-3 text-sm text-muted-foreground lg:table-cell" title={contact.lastOutcome ?? undefined}>
@@ -320,9 +334,14 @@ function ContactCard({ contact, onEdit, onDelete }: { contact: ContactWithAccoun
           <ContactActions contact={contact} onEdit={onEdit} onDelete={onDelete} />
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <InfluenceBadge level={contact.influenceLevel} />
           <StatusBadge status={contact.status} />
+          {contact.contactSource && (
+            <Badge variant="outline">
+              {CONTACT_SOURCES.find((s) => s.value === contact.contactSource)?.label ?? contact.contactSource}
+            </Badge>
+          )}
         </div>
 
         {(contact.lastOutcome || contact.nextAction) && (

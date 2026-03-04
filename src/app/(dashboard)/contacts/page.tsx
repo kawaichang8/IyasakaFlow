@@ -10,6 +10,7 @@ type ContactFilters = {
   accountId?: string;
   status?: string;
   influenceLevel?: string;
+  contactSource?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -35,13 +36,14 @@ function ContactsPageContent() {
     accountId: get('accountId'),
     status: get('status'),
     influenceLevel: get('influenceLevel'),
+    contactSource: get('contactSource'),
     page: getNumber('page') ?? 1,
     limit: getNumber('limit') || 10,
     sortBy: get('sortBy') || 'updatedAt',
     sortOrder: (get('sortOrder') as 'asc' | 'desc') || 'desc',
   }), [get, getNumber]);
 
-  const activeFilterCount = [get('accountId'), get('status'), get('influenceLevel')].filter(Boolean).length;
+  const activeFilterCount = [get('accountId'), get('status'), get('influenceLevel'), get('contactSource')].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
@@ -51,6 +53,7 @@ function ContactsPageContent() {
         accountId={get('accountId') ?? ''}
         status={get('status') ?? ''}
         influenceLevel={get('influenceLevel') ?? ''}
+        contactSource={get('contactSource') ?? ''}
         sortBy={get('sortBy') || 'updatedAt'}
         sortOrder={(get('sortOrder') as 'asc' | 'desc') || 'desc'}
         limit={getNumber('limit') || 10}

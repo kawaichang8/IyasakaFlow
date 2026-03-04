@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const accountId = searchParams.get('accountId') || '';
     const influenceLevel = searchParams.get('influenceLevel') || '';
+    const contactSource = searchParams.get('contactSource') || '';
     const status = searchParams.get('status') || '';
     const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
@@ -39,6 +40,10 @@ export async function GET(request: NextRequest) {
     
     if (influenceLevel) {
       where.influenceLevel = influenceLevel.toUpperCase() as any;
+    }
+    
+    if (contactSource) {
+      where.contactSource = contactSource;
     }
     
     if (status) {
@@ -111,10 +116,13 @@ export async function GET(request: NextRequest) {
         email: contact.email,
         phone: contact.phone,
         mobile: contact.mobile,
+        website: contact.website,
         role: contact.role,
         department: contact.department,
         company: contact.account.name,
+        socialProfiles: contact.socialProfiles as Record<string, string> | null,
         influenceLevel: contact.influenceLevel.toLowerCase(),
+        contactSource: contact.contactSource,
         status: contact.status.toLowerCase(),
         tags: contact.tags,
         notes: contact.notes,
@@ -196,10 +204,12 @@ export async function POST(request: NextRequest) {
         email: validatedData.email || null,
         phone: validatedData.phone || null,
         mobile: validatedData.mobile || null,
+        website: validatedData.website || null,
         role: validatedData.role || null,
         department: validatedData.department || null,
         accountId: validatedData.accountId,
         influenceLevel: influenceLevelMap[validatedData.influenceLevel || 'other'] || 'OTHER',
+        contactSource: validatedData.contactSource || null,
         status: statusMap[validatedData.status] || 'ACTIVE',
         tags: validatedData.tags || [],
         notes: validatedData.notes || null,

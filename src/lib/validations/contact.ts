@@ -41,6 +41,30 @@ export const CONTACT_STATUSES = [
 ] as const;
 
 /**
+ * 初回接触経路（名刺・対面・紹介等）
+ */
+export const contactSourceSchema = z.enum([
+  'business_card',
+  'in_person',
+  'referral',
+  'webinar_lp',
+  'phone_email',
+  'other',
+]);
+
+/**
+ * 初回接触経路 表示用
+ */
+export const CONTACT_SOURCES = [
+  { value: 'business_card', label: '名刺' },
+  { value: 'in_person', label: '対面（イベント・商談等）' },
+  { value: 'referral', label: '紹介' },
+  { value: 'webinar_lp', label: 'ウェビナー・LP' },
+  { value: 'phone_email', label: '電話・メールのみ' },
+  { value: 'other', label: 'その他' },
+] as const;
+
+/**
  * SNSプロファイルスキーマ
  */
 export const socialProfilesSchema = z.object({
@@ -93,6 +117,14 @@ export const contactSchema = z.object({
     .optional()
     .nullable(),
   
+  website: z
+    .string()
+    .max(500, 'WebサイトURLは500文字以内で入力してください')
+    .optional()
+    .nullable()
+    .transform((v) => (v === '' || v == null ? null : v))
+    .pipe(z.union([z.literal(null), z.string().url('有効なURLを入力してください')])),
+  
   role: z
     .string()
     .max(100, '役職は100文字以内で入力してください')
@@ -114,6 +146,10 @@ export const contactSchema = z.object({
   influenceLevel: influenceLevelSchema
     .optional()
     .default('other'),
+  
+  contactSource: contactSourceSchema
+    .optional()
+    .nullable(),
   
   status: contactStatusSchema
     .default('active'),
@@ -151,6 +187,7 @@ export const contactFilterSchema = z.object({
   search: z.string().optional(),
   accountId: z.string().optional(),
   influenceLevel: influenceLevelSchema.optional(),
+  contactSource: contactSourceSchema.optional(),
   status: contactStatusSchema.optional(),
   role: z.string().optional(),
   department: z.string().optional(),

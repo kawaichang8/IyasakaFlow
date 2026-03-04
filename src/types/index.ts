@@ -96,10 +96,13 @@ export interface Contact {
   email?: string;
   phone?: string;
   mobile?: string;
+  website?: string;
   role?: string;
   department?: string;
   company?: string;
   influenceLevel?: InfluenceLevel;
+  /** 初回接触経路（名刺・対面・紹介等） */
+  contactSource?: ContactSource | null;
   status: ContactStatus;
   tags?: string[];
   notes?: string;
@@ -135,6 +138,17 @@ export type ContactStatus =
   | 'active'      // アクティブ
   | 'inactive'    // 非アクティブ
   | 'bounced';    // メール不達
+
+/**
+ * 初回接触経路
+ */
+export type ContactSource =
+  | 'business_card'  // 名刺
+  | 'in_person'      // 対面（イベント・商談等）
+  | 'referral'       // 紹介
+  | 'webinar_lp'     // ウェビナー・LP
+  | 'phone_email'    // 電話・メールのみ
+  | 'other';         // その他
 
 /**
  * SNSプロファイル

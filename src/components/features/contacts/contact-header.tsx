@@ -31,7 +31,7 @@ import { FilterBar } from '@/components/ui/filter-bar';
 import { SearchInput } from '@/components/ui/search-input';
 import { ContactForm } from './contact-form';
 import { useAccounts } from '@/hooks/use-accounts';
-import { CONTACT_STATUSES } from '@/lib/validations/contact';
+import { CONTACT_STATUSES, CONTACT_SOURCES } from '@/lib/validations/contact';
 import { downloadExport } from '@/lib/import-export/download';
 import { toast } from 'sonner';
 
@@ -49,6 +49,7 @@ interface ContactHeaderProps {
   accountId: string;
   status: string;
   influenceLevel?: string;
+  contactSource?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   limit?: number;
@@ -68,6 +69,7 @@ export function ContactHeader({
   accountId,
   status,
   influenceLevel = '',
+  contactSource = '',
   sortBy = 'updatedAt',
   sortOrder = 'desc',
   limit = 10,
@@ -220,6 +222,25 @@ export function ContactHeader({
                   {CONTACT_INFLUENCE_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
                       {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>接触経路</Label>
+              <Select
+                value={contactSource || 'all'}
+                onValueChange={(v) => onFilterChange('contactSource', v === 'all' ? undefined : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="すべて" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  {CONTACT_SOURCES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

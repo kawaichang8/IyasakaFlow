@@ -249,6 +249,7 @@ model Contact {
   email           String?
   phone           String?
   mobile          String?
+  website         String?           // 個人サイト・ブログ等
   
   // 役職・部署
   role            String?
@@ -260,6 +261,9 @@ model Contact {
   
   // 影響力レベル（BtoB特化）
   influenceLevel  InfluenceLevel  @default(OTHER)
+  
+  // 初回接触経路（名刺・対面・紹介等）
+  contactSource   String?         // business_card, in_person, referral, webinar_lp, phone_email, other
   
   // ステータス
   status          ContactStatus   @default(ACTIVE)
@@ -298,6 +302,7 @@ model Contact {
   @@index([accountId])
   @@index([influenceLevel])
   @@index([ownerId])
+  @@index([contactSource])
   @@map("contacts")
 }
 

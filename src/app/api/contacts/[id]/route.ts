@@ -111,10 +111,12 @@ export async function GET(
       email: contact.email,
       phone: contact.phone,
       mobile: contact.mobile,
+      website: contact.website,
       role: contact.role,
       department: contact.department,
       company: contact.account.name,
       influenceLevel: contact.influenceLevel.toLowerCase(),
+      contactSource: contact.contactSource,
       status: contact.status.toLowerCase(),
       tags: contact.tags,
       notes: contact.notes,
@@ -209,12 +211,14 @@ export async function PATCH(
     if (validatedData.email !== undefined) updateData.email = validatedData.email || null;
     if (validatedData.phone !== undefined) updateData.phone = validatedData.phone || null;
     if (validatedData.mobile !== undefined) updateData.mobile = validatedData.mobile || null;
+    if (validatedData.website !== undefined) updateData.website = validatedData.website || null;
     if (validatedData.role !== undefined) updateData.role = validatedData.role || null;
     if (validatedData.department !== undefined) updateData.department = validatedData.department || null;
     if (validatedData.accountId !== undefined) updateData.accountId = validatedData.accountId;
     if (validatedData.influenceLevel !== undefined) {
       updateData.influenceLevel = influenceLevelMap[validatedData.influenceLevel] || existingContact.influenceLevel;
     }
+    if (validatedData.contactSource !== undefined) updateData.contactSource = validatedData.contactSource || null;
     if (validatedData.status !== undefined) {
       updateData.status = statusMap[validatedData.status] || existingContact.status;
     }
