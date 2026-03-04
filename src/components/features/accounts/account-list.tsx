@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
-import { useAccounts, useUpdateAccount } from '@/hooks/use-accounts';
+import { useAccounts, useUpdateAccount, useDeleteAccount } from '@/hooks/use-accounts';
 import { AccountForm } from './account-form';
 import { ACCOUNT_TYPES, ACCOUNT_STATUSES, ACCOUNT_INDUSTRIES } from '@/lib/validations/account';
 import type { AccountFormData } from '@/lib/validations/account';
@@ -87,6 +87,8 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [editingAccount, setEditingAccount] = useState<AccountWithCounts | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const deleteAccount = useDeleteAccount();
   const accounts = (data?.data ?? []) as AccountWithCounts[];
   const pagination = data?.pagination;
 
@@ -126,6 +128,38 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
   const handleCloseEdit = () => {
     setEditingAccount(null);
     setEditingIndex(null);
+  };
+
+  const allSelected = accounts.length > 0 && selectedIds.length === accounts.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(accounts.map((a) => a.id));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    const ok = window.confirm(
+      `${selectedIds.length}件の企業を削除しますか？\n関連する連絡先・案件もまとめて削除されます。`,
+    );
+    if (!ok) return;
+    try {
+      await Promise.all(selectedIds.map((id) => deleteAccount.mutateAsync(id)));
+      setSelectedIds([]);
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : 'アカウントの削除に失敗しました';
+      window.alert(message);
+    }
   };
 
   const handleSaveAndNext = () => {
@@ -184,11 +218,34 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
 
       {/* テーブル表示 */}
       {viewMode === 'table' && (
-        <div className="rounded-md border">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left text-sm font-medium">会社名</th>
+        <div className="space-y-2">
+          {selectedIds.length > 0 && (
+            <div className="flex items-center justify-between rounded-md border bg-muted/60 px-3 py-2 text-xs">
+              <span>
+                {selectedIds.length}件選択中
+              </span>
+              <Button
+                variant="destructive"
+                size="xs"
+                onClick={handleBulkDelete}
+                disabled={deleteAccount.isPending}
+              >
+                選択した企業を削除
+              </Button>
+            </div>
+          )}
+          <div className="rounded-md border">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="w-10 px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">会社名</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">電話</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">メール</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">業種</th>
@@ -197,28 +254,31 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
                 <th className="hidden px-4 py-3 text-left text-sm font-medium xl:table-cell">最終連絡</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium xl:table-cell">反応</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium xl:table-cell">ネクストアクション</th>
-                <th className="hidden px-4 py-3 text-left text-sm font-medium sm:table-cell">連絡先数</th>
-                <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">取引総額</th>
-                <th className="px-4 py-3 text-right text-sm font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((account, index) => (
-                <AccountTableRow
-                  key={account.id}
-                  account={{
-                    ...account,
-                    contactCount: account.contactCount ?? 0,
-                    totalDealValue: account.totalDealValue ?? 0,
-                  }}
-                  onEdit={() => {
-                    setEditingIndex(index);
-                    setEditingAccount(account);
-                  }}
-                />
-              ))}
-            </tbody>
-          </table>
+                  <th className="hidden px-4 py-3 text-left text-sm font-medium sm:table-cell">連絡先数</th>
+                  <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">取引総額</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map((account, index) => (
+                  <AccountTableRow
+                    key={account.id}
+                    account={{
+                      ...account,
+                      contactCount: account.contactCount ?? 0,
+                      totalDealValue: account.totalDealValue ?? 0,
+                    }}
+                    selected={selectedIds.includes(account.id)}
+                    onToggleSelect={() => toggleSelectOne(account.id)}
+                    onEdit={() => {
+                      setEditingIndex(index);
+                      setEditingAccount(account);
+                    }}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -280,9 +340,26 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
 /**
  * テーブル行コンポーネント
  */
-function AccountTableRow({ account, onEdit }: { account: AccountWithCounts; onEdit: () => void }) {
+function AccountTableRow({
+  account,
+  selected,
+  onToggleSelect,
+  onEdit,
+}: {
+  account: AccountWithCounts;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onEdit: () => void;
+}) {
   return (
     <tr className="border-b transition-colors hover:bg-muted/50">
+      <td className="w-10 px-4 py-3 align-top">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+        />
+      </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">

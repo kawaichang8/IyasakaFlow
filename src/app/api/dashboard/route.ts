@@ -340,23 +340,34 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ data: response });
   } catch (error: unknown) {
     console.error('Error fetching dashboard data:', error);
-    const message = error instanceof Error ? error.message : '';
+    const message = error instanceof Error ? error.message : String(error);
+    const code = (error as { code?: string }).code;
+
     const isSchemaError =
       typeof message === 'string' &&
       (message.includes('column') ||
         message.includes('does not exist') ||
         message.includes('Unknown arg') ||
-        (error as { code?: string })?.code === 'P2010');
+        code === 'P2010');
+
     if (isSchemaError) {
       return NextResponse.json(
         {
-          error: 'データベースのスキーマがアプリと一致していません。本番環境で「npx prisma db push」を実行してマイグレーションを適用してください。',
+          error:
+            'データベースのスキーマがアプリと一致していません。本番環境で「npx prisma db push」を実行してマイグレーションを適用してください。',
+          details: message,
+          code,
         },
         { status: 503 }
       );
     }
+
     return NextResponse.json(
-      { error: 'ダッシュボードデータの取得に失敗しました' },
+      {
+        error: 'ダッシュボードデータの取得に失敗しました',
+        details: message,
+        code,
+      },
       { status: 500 }
     );
   }
