@@ -253,6 +253,7 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
                   <th className="px-4 py-3 text-left text-sm font-medium">会社名</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">電話</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">メール</th>
+                <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">Webサイト</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">業種</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">種別</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">ステータス</th>
@@ -378,11 +379,6 @@ function AccountTableRow({
               placeholder="会社名を入力"
               className="font-medium"
             />
-            {account.website && (
-              <p className="text-xs text-muted-foreground truncate">
-                {account.website}
-              </p>
-            )}
             <Link
               href={`/accounts/${account.id}`}
               className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -407,6 +403,14 @@ function AccountTableRow({
           field="email"
           value={account.email ?? null}
           placeholder="—"
+        />
+      </td>
+      <td className="hidden px-4 py-3 text-sm text-muted-foreground lg:table-cell">
+        <InlineTextField
+          id={account.id}
+          field="website"
+          value={account.website ?? null}
+          placeholder="https://..."
         />
       </td>
       <td className="hidden px-4 py-3 text-sm text-muted-foreground md:table-cell">
@@ -645,7 +649,7 @@ function InlineTextField({
   className,
 }: {
   id: string;
-  field: 'name' | 'phone' | 'email';
+  field: 'name' | 'phone' | 'email' | 'website';
   value: string | null;
   placeholder?: string;
   className?: string;

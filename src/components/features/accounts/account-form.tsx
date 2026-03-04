@@ -38,7 +38,7 @@ interface CreateWithContactFields {
  * 企業アカウント作成/編集フォーム
  * 新規作成時は会社名のみ必須。任意で担当者（連絡先）を同時登録可能。
  */
-export function AccountForm({ initialData, onSuccess, onCancel }: AccountFormProps) {
+export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }: AccountFormProps) {
   const queryClient = useQueryClient();
   const isCreate = !initialData?.id;
   const [createContact, setCreateContact] = useState<CreateWithContactFields>({
