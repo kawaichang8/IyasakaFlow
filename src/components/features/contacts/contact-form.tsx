@@ -1,6 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
+import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { contactSchema, CONTACT_SOURCES, type ContactFormData } from '@/lib/validations/contact';
-import { useAccounts } from '@/hooks/use-accounts';
+import { useAccounts, useCreateAccount } from '@/hooks/use-accounts';
 import { useQueryClient } from '@tanstack/react-query';
 import { CONTACTS_QUERY_KEY } from '@/hooks/use-contacts';
 import { toast } from 'sonner';
@@ -31,6 +32,9 @@ interface ContactFormProps {
  */
 export function ContactForm({ initialData, accountId, onSuccess, onCancel }: ContactFormProps) {
   const queryClient = useQueryClient();
+  const [accountSearch, setAccountSearch] = useState('');
+  const [newAccountName, setNewAccountName] = useState('');
+  const createAccount = useCreateAccount();
   const {
     register,
     handleSubmit,
@@ -96,6 +100,39 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
   const { data: accountsData } = useAccounts({ limit: 500 });
   const accounts = accountsData?.data ?? [];
 
+  const filteredAccounts = useMemo(() => {
+    const q = accountSearch.trim().toLowerCase();
+    if (!q) return accounts;
+    return accounts.filter((account) => {
+      const name = account.name?.toLowerCase() ?? '';
+      const industry = (account as any).industry?.toLowerCase?.() ?? '';
+      return name.includes(q) || industry.includes(q);
+    });
+  }, [accounts, accountSearch]);
+
+  const handleQuickCreateAccount = async () => {
+    const name = newAccountName.trim();
+    if (!name) {
+      toast.error('企業名を入力してください');
+      return;
+    }
+    try {
+      const result = await createAccount.mutateAsync({ name } as any);
+      const newId = (result as any)?.data?.id;
+      if (newId) {
+        setValue('accountId', newId);
+        setAccountSearch('');
+        toast.success('企業アカウントを作成し、所属企業に設定しました');
+      } else {
+        toast.success('企業アカウントを作成しました');
+      }
+      setNewAccountName('');
+    } catch (error) {
+      console.error('Error creating account from contact form:', error);
+      toast.error(error instanceof Error ? error.message : '企業アカウントの作成に失敗しました');
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* 基本情報 */}
@@ -116,7 +153,18 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
               <SelectValue placeholder={accounts.length === 0 ? 'まず企業アカウントを作成してください' : '企業を選択'} />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((account) => (
+              {accounts.length > 0 && (
+                <div className="p-2">
+                  <Input
+                    autoFocus
+                    placeholder="企業名・業種で絞り込み"
+                    value={accountSearch}
+                    onChange={(e) => setAccountSearch(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
+              )}
+              {filteredAccounts.map((account) => (
                 <SelectItem key={account.id} value={account.id}>
                   {account.name}
                 </SelectItem>
@@ -129,6 +177,29 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
           {errors.accountId && (
             <p className="text-sm text-destructive">{errors.accountId.message}</p>
           )}
+          <div className="mt-2 space-y-1 rounded-md border bg-muted/40 p-3">
+            <p className="text-xs font-medium text-muted-foreground">この画面から企業アカウントを簡易登録</p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="例: 株式会社ABC"
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                className="h-8"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleQuickCreateAccount}
+                disabled={createAccount.isPending}
+              >
+                {createAccount.isPending ? '作成中...' : '企業を登録'}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              会社名だけで登録します。詳細情報はあとから企業画面で編集できます。
+            </p>
+          </div>
         </div>
 
         {/* 氏名（必須） */}
