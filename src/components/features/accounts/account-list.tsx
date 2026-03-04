@@ -65,6 +65,8 @@ function accountToFormData(account: Account): Partial<AccountFormData> & { id: s
       linkedin: sp?.linkedin ?? '',
       twitter: sp?.twitter ?? '',
       facebook: sp?.facebook ?? '',
+      threads: sp?.threads ?? '',
+      instagram: sp?.instagram ?? '',
     },
     address: account.address ?? '',
     city: account.city ?? '',

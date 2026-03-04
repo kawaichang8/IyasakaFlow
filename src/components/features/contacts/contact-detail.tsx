@@ -150,7 +150,7 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
             電話をかける
           </Button>
         )}
-        {contact.socialProfiles?.linkedin && (
+            {contact.socialProfiles?.linkedin && (
           <Button variant="outline" asChild>
             <a href={contact.socialProfiles.linkedin} target="_blank" rel="noopener noreferrer">
               <Linkedin className="mr-2 h-4 w-4" />
@@ -231,7 +231,7 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
               </div>
             )}
 
-            {contact.socialProfiles && (contact.socialProfiles.linkedin || contact.socialProfiles.twitter || contact.socialProfiles.facebook) && (
+            {contact.socialProfiles && (contact.socialProfiles.linkedin || contact.socialProfiles.twitter || contact.socialProfiles.facebook || contact.socialProfiles.threads || contact.socialProfiles.instagram) && (
               <div className="space-y-2 border-t pt-4">
                 <p className="text-sm text-muted-foreground">SNS</p>
                 <div className="flex flex-wrap gap-2">
@@ -254,6 +254,26 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
                       className="inline-flex items-center gap-1 rounded-md bg-black/10 px-2 py-1 text-sm hover:underline dark:bg-white/10"
                     >
                       X
+                    </a>
+                  )}
+                  {contact.socialProfiles.threads && (
+                    <a
+                      href={contact.socialProfiles.threads}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-black/5 px-2 py-1 text-sm hover:underline dark:bg-white/10"
+                    >
+                      Threads
+                    </a>
+                  )}
+                  {contact.socialProfiles.instagram && (
+                    <a
+                      href={contact.socialProfiles.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-[#E1306C]/10 px-2 py-1 text-sm text-[#E1306C] hover:underline"
+                    >
+                      Instagram
                     </a>
                   )}
                   {contact.socialProfiles.facebook && (
@@ -430,7 +450,7 @@ function getInteractionTypeLabel(type: string): string {
 /** contact-detail 用：API連絡先をフォーム初期値に変換（contact-list の contactToFormData と同様） */
 function contactToFormData(c: ContactWithRelations): Partial<ContactFormData> & { id: string } {
   const accountId = c.account?.id ?? c.accountId;
-  const sp = c.socialProfiles as { linkedin?: string; twitter?: string; facebook?: string } | undefined;
+  const sp = c.socialProfiles as { linkedin?: string; twitter?: string; facebook?: string; threads?: string; instagram?: string } | undefined;
   return {
     id: c.id,
     accountId: accountId ?? '',

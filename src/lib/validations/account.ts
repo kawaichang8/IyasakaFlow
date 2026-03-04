@@ -22,12 +22,12 @@ export const accountTypeSchema = z.enum([
  * 取引先種別表示用
  */
 export const ACCOUNT_TYPES = [
-  { value: 'customer', label: '顧客' },
-  { value: 'prospect', label: '見込み' },
-  { value: 'subcontractor', label: '下請け' },
+  { value: 'customer', label: '顧客企業' },
+  { value: 'prospect', label: '見込み企業（未成約）' },
+  { value: 'subcontractor', label: '下請け先' },
   { value: 'outsource', label: '外注先' },
   { value: 'freelancer', label: 'フリーランス・個人' },
-  { value: 'partner', label: 'パートナー' },
+  { value: 'partner', label: 'パートナー企業' },
   { value: 'other', label: 'その他' },
 ] as const;
 
@@ -49,14 +49,14 @@ export const accountStatusSchema = z.enum([
  * ステータス表示用
  */
 export const ACCOUNT_STATUSES = [
-  { value: 'prospect', label: '見込み' },
+  { value: 'prospect', label: '見込み（未成約）' },
   { value: 'trial', label: 'トライアル中' },
-  { value: 'customer', label: '顧客' },
-  { value: 'active', label: 'アクティブ' },
-  { value: 'inactive', label: '非アクティブ' },
-  { value: 'suspended', label: '一時停止' },
-  { value: 'churned', label: '離脱' },
-  { value: 'partner', label: 'パートナー' },
+  { value: 'customer', label: '顧客（成約済み）' },
+  { value: 'active', label: '取引中（アクティブ）' },
+  { value: 'inactive', label: '休眠（ご無沙汰）' },
+  { value: 'suspended', label: '一時停止（請求・利用停止）' },
+  { value: 'churned', label: '解約・失注' },
+  { value: 'partner', label: 'パートナー（協業）' },
 ] as const;
 
 /**
@@ -96,6 +96,8 @@ export const socialProfilesSchema = z.object({
   linkedin: z.string().url().optional().nullable().or(z.literal('')),
   twitter: z.string().url().optional().nullable().or(z.literal('')),
   facebook: z.string().url().optional().nullable().or(z.literal('')),
+  threads: z.string().url().optional().nullable().or(z.literal('')),
+  instagram: z.string().url().optional().nullable().or(z.literal('')),
 });
 
 /**

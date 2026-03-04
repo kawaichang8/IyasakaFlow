@@ -12,11 +12,14 @@ import {
   Database,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { TeamManagement, UserManagement, RolePermissions, ImportExport } from '@/components/features/settings';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { isAdmin, isManagerOrAbove } from '@/lib/auth/permissions';
 
 type SettingsTab = 'general' | 'teams' | 'users' | 'permissions' | 'data';
+
+const LIST_FILTERS_PERSIST_KEY = 'settings:listFilters:persistent';
 
 function PageFallback() {
   return (
@@ -138,6 +141,19 @@ export default function SettingsPage() {
  * 一般設定
  */
 function GeneralSettings() {
+  const [persistListFilters, setPersistListFilters] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setPersistListFilters(localStorage.getItem(LIST_FILTERS_PERSIST_KEY) === 'true');
+  }, []);
+
+  const handleTogglePersistListFilters = (checked: boolean) => {
+    setPersistListFilters(checked);
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(LIST_FILTERS_PERSIST_KEY, checked ? 'true' : 'false');
+  };
+
   return (
     <div className="space-y-6">
       {/* プロフィール */}
@@ -239,6 +255,18 @@ function GeneralSettings() {
                 <option>日本語</option>
                 <option>English</option>
               </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">一覧フィルターの保持</p>
+                <p className="text-sm text-muted-foreground">
+                  ページを移動・再読み込みしても直前の絞り込み条件を保持します
+                </p>
+              </div>
+              <Switch
+                checked={persistListFilters}
+                onCheckedChange={handleTogglePersistListFilters}
+              />
             </div>
           </div>
         </CardContent>

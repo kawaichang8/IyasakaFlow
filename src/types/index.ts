@@ -18,8 +18,8 @@ export interface Account {
   website?: string;
   phone?: string;
   email?: string;
-  /** SNS（LinkedIn / X / Facebook） */
-  socialProfiles?: { linkedin?: string; twitter?: string; facebook?: string };
+  /** SNS（LinkedIn / X / Facebook / Threads / Instagram） */
+  socialProfiles?: SocialProfiles;
   address?: string;
   city?: string;
   state?: string;
@@ -159,6 +159,8 @@ export interface SocialProfiles {
   linkedin?: string;
   twitter?: string;
   facebook?: string;
+  threads?: string;
+  instagram?: string;
 }
 
 /**

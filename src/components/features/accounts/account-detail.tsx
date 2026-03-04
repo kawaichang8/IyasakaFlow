@@ -259,7 +259,7 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
                 </a>
               </div>
             )}
-            {account.socialProfiles && (account.socialProfiles.linkedin || account.socialProfiles.twitter || account.socialProfiles.facebook) && (
+            {account.socialProfiles && (account.socialProfiles.linkedin || account.socialProfiles.twitter || account.socialProfiles.facebook || account.socialProfiles.threads || account.socialProfiles.instagram) && (
               <div className="space-y-2 border-t pt-4">
                 <p className="text-sm text-muted-foreground">SNS</p>
                 <div className="flex flex-wrap gap-2">
@@ -282,6 +282,26 @@ export function AccountDetail({ accountId }: AccountDetailProps) {
                       className="inline-flex items-center gap-1 rounded-md bg-black/10 px-2 py-1 text-sm hover:underline dark:bg-white/10"
                     >
                       X
+                    </a>
+                  )}
+                  {account.socialProfiles.threads && (
+                    <a
+                      href={account.socialProfiles.threads}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-black/5 px-2 py-1 text-sm hover:underline dark:bg-white/10"
+                    >
+                      Threads
+                    </a>
+                  )}
+                  {account.socialProfiles.instagram && (
+                    <a
+                      href={account.socialProfiles.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md bg-[#E1306C]/10 px-2 py-1 text-sm text-[#E1306C] hover:underline"
+                    >
+                      Instagram
                     </a>
                   )}
                   {account.socialProfiles.facebook && (

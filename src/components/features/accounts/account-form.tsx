@@ -62,7 +62,7 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
       website: '',
       phone: '',
       email: '',
-      socialProfiles: { linkedin: '', twitter: '', facebook: '' },
+      socialProfiles: { linkedin: '', twitter: '', facebook: '', threads: '', instagram: '' },
       address: '',
       city: '',
       state: '',
@@ -358,6 +358,24 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
                 type="url"
                 placeholder="https://facebook.com/..."
                 {...register('socialProfiles.facebook')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="account-socialProfiles.threads" className="text-xs text-muted-foreground">Threads</Label>
+              <Input
+                id="account-socialProfiles.threads"
+                type="url"
+                placeholder="https://www.threads.net/@..."
+                {...register('socialProfiles.threads')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="account-socialProfiles.instagram" className="text-xs text-muted-foreground">Instagram</Label>
+              <Input
+                id="account-socialProfiles.instagram"
+                type="url"
+                placeholder="https://instagram.com/..."
+                {...register('socialProfiles.instagram')}
               />
             </div>
           </div>

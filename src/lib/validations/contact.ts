@@ -71,6 +71,8 @@ export const socialProfilesSchema = z.object({
   linkedin: z.string().url().optional().nullable().or(z.literal('')),
   twitter: z.string().url().optional().nullable().or(z.literal('')),
   facebook: z.string().url().optional().nullable().or(z.literal('')),
+  threads: z.string().url().optional().nullable().or(z.literal('')),
+  instagram: z.string().url().optional().nullable().or(z.literal('')),
 });
 
 /**

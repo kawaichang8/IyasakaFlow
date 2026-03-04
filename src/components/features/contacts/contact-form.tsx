@@ -56,7 +56,7 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
       status: 'active',
       tags: [],
       notes: '',
-      socialProfiles: { linkedin: '', twitter: '', facebook: '' },
+      socialProfiles: { linkedin: '', twitter: '', facebook: '', threads: '', instagram: '' },
       ...initialData,
     },
   });
@@ -319,6 +319,24 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
                 type="url"
                 placeholder="https://facebook.com/..."
                 {...register('socialProfiles.facebook')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="socialProfiles.threads" className="text-xs text-muted-foreground">Threads</Label>
+              <Input
+                id="socialProfiles.threads"
+                type="url"
+                placeholder="https://www.threads.net/@..."
+                {...register('socialProfiles.threads')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="socialProfiles.instagram" className="text-xs text-muted-foreground">Instagram</Label>
+              <Input
+                id="socialProfiles.instagram"
+                type="url"
+                placeholder="https://instagram.com/..."
+                {...register('socialProfiles.instagram')}
               />
             </div>
           </div>

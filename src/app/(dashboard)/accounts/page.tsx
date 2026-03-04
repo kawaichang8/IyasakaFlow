@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useEffect, useState } from 'react';
 import { AccountHeader } from '@/components/features/accounts/account-header';
 import { AccountList } from '@/components/features/accounts/account-list';
 import { useSearchParamsState } from '@/hooks/use-search-params';
@@ -18,6 +18,9 @@ type AccountFilters = {
   sortOrder?: string;
 };
 
+const LIST_FILTERS_PERSIST_KEY = 'settings:listFilters:persistent';
+const ACCOUNTS_FILTERS_KEY = 'accounts:listFilters';
+
 function PageFallback() {
   return (
     <div className="flex items-center justify-center py-12">
@@ -31,6 +34,7 @@ function PageFallback() {
  */
 function AccountsPageContent() {
   const { get, getNumber, setOne, set, clear } = useSearchParamsState<AccountFilters>();
+  const [restoredFilters, setRestoredFilters] = useState(false);
 
   const params = useMemo<AccountFilters>(() => ({
     search: get('search'),
@@ -44,6 +48,68 @@ function AccountsPageContent() {
     sortBy: get('sortBy') || 'updatedAt',
     sortOrder: (get('sortOrder') as 'asc' | 'desc') || 'desc',
   }), [get, getNumber]);
+
+  // 初回マウント時に、設定がONかつURLにフィルターが無い場合はローカル保存されたフィルターを復元
+  useEffect(() => {
+    if (restoredFilters) return;
+    if (typeof window === 'undefined') return;
+
+    const persist = localStorage.getItem(LIST_FILTERS_PERSIST_KEY) === 'true';
+    if (!persist) {
+      setRestoredFilters(true);
+      return;
+    }
+
+    const hasAnyFilter =
+      !!(get('search') ||
+        get('industry') ||
+        get('accountType') ||
+        get('status') ||
+        get('needFollowUp') ||
+        get('duplicates') ||
+        get('sortBy') ||
+        get('limit'));
+
+    if (hasAnyFilter) {
+      setRestoredFilters(true);
+      return;
+    }
+
+    const saved = localStorage.getItem(ACCOUNTS_FILTERS_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as AccountFilters;
+        // ページは1から始める
+        const { page: _page, ...rest } = parsed;
+        set(rest);
+      } catch {
+        // 破損していた場合は何もしない
+      }
+    }
+
+    setRestoredFilters(true);
+  }, [get, set, restoredFilters]);
+
+  // フィルター・ソート条件をローカルストレージに保存
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const persist = localStorage.getItem(LIST_FILTERS_PERSIST_KEY) === 'true';
+    if (!persist) return;
+
+    const payload: AccountFilters = {
+      search: params.search,
+      industry: params.industry,
+      accountType: params.accountType,
+      status: params.status,
+      needFollowUp: params.needFollowUp,
+      duplicates: params.duplicates,
+      limit: params.limit,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+    };
+
+    localStorage.setItem(ACCOUNTS_FILTERS_KEY, JSON.stringify(payload));
+  }, [params]);
 
   const activeFilterCount = [
     get('industry'),
