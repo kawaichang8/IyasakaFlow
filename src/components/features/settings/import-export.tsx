@@ -19,7 +19,8 @@ type ExportFormat = 'csv' | 'json';
 
 const EXPORT_INCLUDE_NOTES_KEY = 'export:csv:includeNotes';
 const EXPORT_ACCOUNTS_MODE_KEY = 'export:accounts:csvMode';
-type AccountsExportMode = 'all' | 'customersOnly';
+const EXPORT_ACCOUNTS_TYPES_KEY = 'export:accounts:csvTypes';
+type AccountsExportMode = 'all' | 'customersOnly' | 'custom';
 
 const EXPORT_OPTIONS: { type: ExportType; label: string; icon: React.ElementType }[] = [
   { type: 'accounts', label: '企業アカウント', icon: Building2 },
@@ -71,6 +72,7 @@ export function ImportExport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [includeNotes, setIncludeNotes] = useState(true);
   const [accountsExportMode, setAccountsExportMode] = useState<AccountsExportMode>('all');
+  const [accountsExportTypes, setAccountsExportTypes] = useState<string[]>(['customer', 'prospect', 'partner']);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -91,9 +93,25 @@ export function ImportExport() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const stored = localStorage.getItem(EXPORT_ACCOUNTS_MODE_KEY) as AccountsExportMode | null;
-    if (stored === 'all' || stored === 'customersOnly') {
-      setAccountsExportMode(stored);
+    const storedMode = localStorage.getItem(EXPORT_ACCOUNTS_MODE_KEY) as AccountsExportMode | null;
+    if (storedMode === 'all' || storedMode === 'customersOnly' || storedMode === 'custom') {
+      setAccountsExportMode(storedMode);
+    }
+
+    const rawTypes = localStorage.getItem(EXPORT_ACCOUNTS_TYPES_KEY);
+    if (rawTypes) {
+      try {
+        const parsed = JSON.parse(rawTypes) as string[];
+        if (Array.isArray(parsed)) {
+          const known = ['customer', 'prospect', 'subcontractor', 'outsource', 'freelancer', 'partner', 'other', 'unknown'];
+          const filtered = parsed.filter((t) => known.includes(t));
+          if (filtered.length) {
+            setAccountsExportTypes(filtered);
+          }
+        }
+      } catch {
+        // 無視
+      }
     }
   }, []);
 
@@ -102,6 +120,17 @@ export function ImportExport() {
     setAccountsExportMode(mode);
     if (typeof window === 'undefined') return;
     localStorage.setItem(EXPORT_ACCOUNTS_MODE_KEY, mode);
+  };
+
+  const toggleAccountType = (value: string) => {
+    setAccountsExportTypes((prev) => {
+      const exists = prev.includes(value);
+      const next = exists ? prev.filter((v) => v !== value) : [...prev, value];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(EXPORT_ACCOUNTS_TYPES_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
   };
 
   const handleExport = (type: ExportType, format: ExportFormat) => {
@@ -213,11 +242,36 @@ export function ImportExport() {
               >
                 <option value="all">すべての企業（顧客・見込み・下請け・業者などを含む）</option>
                 <option value="customersOnly">顧客・見込みの企業のみ（下請け・業者などを除外）</option>
+                <option value="custom">カスタム（下の種別チェックで指定）</option>
               </select>
             </label>
             <p className="text-[11px] text-muted-foreground">
-              メール配信リストなどで、仕入先・下請け・業者を除外したい場合は「顧客・見込みのみ」を選択してください。
+              メール配信リストなどで、含めたい種別だけを出力したい場合は「カスタム」を選んでください。
             </p>
+            {accountsExportMode === 'custom' && (
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                {[
+                  { value: 'customer', label: '顧客企業' },
+                  { value: 'prospect', label: '見込み企業' },
+                  { value: 'partner', label: 'パートナー' },
+                  { value: 'subcontractor', label: '下請け先' },
+                  { value: 'outsource', label: '外注先' },
+                  { value: 'freelancer', label: 'フリーランス・個人' },
+                  { value: 'other', label: 'その他' },
+                  { value: 'unknown', label: '種別未設定' },
+                ].map((opt) => (
+                  <label key={opt.value} className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-muted-foreground"
+                      checked={accountsExportTypes.includes(opt.value)}
+                      onChange={() => toggleAccountType(opt.value)}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

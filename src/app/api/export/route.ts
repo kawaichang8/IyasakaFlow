@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     const includeNotes = includeNotesParam === null ? true : !(includeNotesParam === '0' || includeNotesParam === 'false');
     const customersOnlyParam = searchParams.get('customersOnly');
     const customersOnly = customersOnlyParam === '1' || customersOnlyParam === 'true';
+    const accountTypesParam = searchParams.get('accountTypes');
+    const includeUnknownParam = searchParams.get('includeUnknown');
+    const includeUnknown = includeUnknownParam === '1' || includeUnknownParam === 'true';
 
     if (!['accounts', 'contacts', 'deals'].includes(type)) {
       return NextResponse.json(
@@ -37,16 +40,39 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'accounts') {
-      const where = customersOnly
-        ? {
-            OR: [
-              { accountType: 'CUSTOMER' },
-              { accountType: 'PROSPECT' },
-              { accountType: 'PARTNER' },
-              { accountType: null },
-            ],
+      let where: any = undefined;
+
+      if (accountTypesParam) {
+        const rawTypes = accountTypesParam.split(',').map((v) => v.trim().toUpperCase()).filter(Boolean);
+        const allowed = ['CUSTOMER', 'PROSPECT', 'SUBCONTRACTOR', 'OUTSOURCE', 'FREELANCER', 'PARTNER', 'OTHER'];
+        const types = rawTypes.filter((t) => allowed.includes(t));
+
+        if (types.length > 0) {
+          if (includeUnknown) {
+            where = {
+              OR: [
+                { accountType: { in: types } },
+                { accountType: null },
+              ],
+            };
+          } else {
+            where = {
+              accountType: { in: types },
+            };
           }
-        : undefined;
+        } else if (includeUnknown) {
+          where = { accountType: null };
+        }
+      } else if (customersOnly) {
+        where = {
+          OR: [
+            { accountType: 'CUSTOMER' },
+            { accountType: 'PROSPECT' },
+            { accountType: 'PARTNER' },
+            { accountType: null },
+          ],
+        };
+      }
 
       const accounts = await prisma.account.findMany({
         where,
