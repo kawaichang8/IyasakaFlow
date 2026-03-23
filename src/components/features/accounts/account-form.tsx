@@ -204,6 +204,28 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
         createContact.contactLastName.trim() &&
         createContact.contactFirstName.trim()
       ) {
+        const ln = createContact.contactLastName.trim();
+        const fn = createContact.contactFirstName.trim();
+        try {
+          const dupParams = new URLSearchParams({
+            accountId: newAccountId,
+            lastName: ln,
+            firstName: fn,
+          });
+          const dupRes = await fetch(`/api/contacts/check-duplicate?${dupParams.toString()}`);
+          const dupData = (await dupRes.json()) as {
+            duplicate?: boolean;
+            matches?: { id: string; name: string }[];
+          };
+          if (dupRes.ok && dupData.duplicate && dupData.matches && dupData.matches.length > 0) {
+            toast.warning('同じ企業に同じ氏名の連絡先が既にいます', {
+              description: `既存 ${dupData.matches.length} 件と重複の可能性があります。このまま登録してよいか確認してください。`,
+            });
+          }
+        } catch {
+          /* 重複確認失敗時は登録処理は続行 */
+        }
+
         const contactRes = await fetch('/api/contacts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

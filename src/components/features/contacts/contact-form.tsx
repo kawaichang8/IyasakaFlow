@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,9 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
   const [accountSearch, setAccountSearch] = useState('');
   const [newAccountName, setNewAccountName] = useState('');
   const createAccount = useCreateAccount();
+  /** 同一企業内の同名連絡先（インライン表示用） */
+  const [nameDuplicateCount, setNameDuplicateCount] = useState<number | null>(null);
+  const duplicateToastKeyRef = useRef<string | null>(null);
   const defaultValues = useMemo((): ContactFormData => {
     const parts = contactNamePartsFromLegacy(
       initialData?.name,
@@ -98,6 +101,7 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
     handleSubmit,
     setValue,
     watch,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
@@ -107,6 +111,67 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
   const influenceLevel = watch('influenceLevel');
   const contactSource = watch('contactSource');
   const status = watch('status');
+  const accountIdW = watch('accountId');
+  const lastNameW = watch('lastName');
+  const firstNameW = watch('firstName');
+
+  /** 同一企業で姓+名（または表示名）が既存と重複する場合に通知 */
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const aid = getValues('accountId');
+      const ln = (getValues('lastName') ?? '').trim();
+      const fn = (getValues('firstName') ?? '').trim();
+      if (!aid || !ln || !fn) {
+        if (!cancelled) {
+          setNameDuplicateCount(null);
+          duplicateToastKeyRef.current = null;
+        }
+        return;
+      }
+
+      const params = new URLSearchParams({
+        accountId: aid,
+        lastName: ln,
+        firstName: fn,
+      });
+      if (initialData?.id) params.set('excludeId', initialData.id);
+
+      try {
+        const res = await fetch(`/api/contacts/check-duplicate?${params.toString()}`);
+        if (cancelled) return;
+        const data = (await res.json()) as {
+          duplicate?: boolean;
+          matches?: { id: string; name: string }[];
+        };
+        const lnNow = (getValues('lastName') ?? '').trim();
+        const fnNow = (getValues('firstName') ?? '').trim();
+        if (lnNow !== ln || fnNow !== fn) return;
+
+        if (res.ok && data.duplicate && data.matches && data.matches.length > 0) {
+          const n = data.matches.length;
+          setNameDuplicateCount(n);
+          const key = `${aid}|${ln}|${fn}|${initialData?.id ?? 'new'}`;
+          if (duplicateToastKeyRef.current !== key) {
+            duplicateToastKeyRef.current = key;
+            toast.warning('同じ所属企業に同じ氏名の連絡先がいます', {
+              description: `既存 ${n} 件と重複の可能性があります。別人の場合は役職やメモで区別するか、意図した登録か確認してください。`,
+            });
+          }
+        } else {
+          setNameDuplicateCount(null);
+          duplicateToastKeyRef.current = null;
+        }
+      } catch {
+        if (!cancelled) setNameDuplicateCount(null);
+      }
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [accountIdW, lastNameW, firstNameW, initialData?.id, getValues]);
 
   const onSubmit = async (data: ContactFormData) => {
     try {
@@ -275,6 +340,14 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
         <p className="text-xs text-muted-foreground">
           一覧・案件では「姓 名」の順で表示されます。メール作成時は「姓」で挨拶文を入れられます。
         </p>
+        {nameDuplicateCount != null && nameDuplicateCount > 0 && (
+          <p
+            className="text-sm font-medium text-amber-800 dark:text-amber-200"
+            role="status"
+          >
+            この企業にはすでに同じ氏名の連絡先が {nameDuplicateCount} 件あります。別人の場合は区別できるよう役職・メモを入れるか、重複登録で問題ないか確認してください。
+          </p>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           {/* 役職 */}
