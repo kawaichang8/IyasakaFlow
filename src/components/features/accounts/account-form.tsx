@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ACCOUNTS_QUERY_KEY } from '@/hooks/use-accounts';
 import { CONTACTS_QUERY_KEY } from '@/hooks/use-contacts';
 import { toast } from 'sonner';
+import { fetchAddressFromPostalCode } from '@/lib/postal-code-jp';
 
 interface AccountFormProps {
   initialData?: Partial<AccountFormData> & { id?: string };
@@ -36,7 +37,7 @@ interface CreateWithContactFields {
 
 /**
  * 企業アカウント作成/編集フォーム
- * 新規作成時は会社名のみ必須。任意で担当者（連絡先）を同時登録可能。
+ * 新規作成時は取引先名（会社名・氏名・屋号など）のみ必須。任意で担当者（連絡先）を同時登録可能。
  */
 export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }: AccountFormProps) {
   const queryClient = useQueryClient();
@@ -52,6 +53,7 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
     register,
     handleSubmit,
     setValue,
+    getValues,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<AccountFormData>({
@@ -80,6 +82,40 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
 
   const status = watch('status');
   const accountType = watch('accountType');
+  const postalCodeW = watch('postalCode');
+  const countryW = watch('country');
+
+  /** 日本の郵便番号7桁で zipcloud から住所を補完（空欄の項目のみ） */
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const country = getValues('country');
+      if (country && country !== '日本') return;
+
+      const pc = getValues('postalCode') ?? '';
+      const digits = pc.replace(/\D/g, '');
+      if (digits.length !== 7) return;
+
+      const addr = await fetchAddressFromPostalCode(pc);
+      if (cancelled) return;
+      const digitsNow = (getValues('postalCode') ?? '').replace(/\D/g, '');
+      if (digitsNow !== digits) return;
+      if (!addr) return;
+
+      const state = getValues('state');
+      const city = getValues('city');
+      const line = getValues('address');
+      const opts = { shouldDirty: true, shouldValidate: true } as const;
+      if (!state?.trim()) setValue('state', addr.state, opts);
+      if (!city?.trim()) setValue('city', addr.city, opts);
+      if (!line?.trim()) setValue('address', addr.town, opts);
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [postalCodeW, countryW, getValues, setValue]);
 
   const submitCore = async (data: AccountFormData, mode: 'save' | 'next') => {
     try {
@@ -148,17 +184,29 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
       <div className="space-y-4">
         <h3 className="text-lg font-medium">基本情報</h3>
         
-        {/* 会社名（必須） */}
+        {/* 取引先名（必須）— 法人は会社名、個人・フリーランスは氏名・屋号など */}
         <div className="space-y-2">
           <Label htmlFor="name">
-            会社名 <span className="text-destructive">*</span>
+            {accountType === 'freelancer' ? (
+              <>氏名・屋号（表示名） </>
+            ) : (
+              <>取引先名（会社名など） </>
+            )}
+            <span className="text-destructive">*</span>
           </Label>
           <Input
             id="name"
-            placeholder="例: 株式会社ABC"
+            placeholder={
+              accountType === 'freelancer'
+                ? '例: 山田太郎 / 山田デザイン（個人事業主）'
+                : '例: 株式会社ABC'
+            }
             {...register('name')}
             aria-invalid={!!errors.name}
           />
+          <p className="text-xs text-muted-foreground">
+            法人は会社名を入力。フリーランス・個人の方は氏名や屋号を入力してください。種別で「フリーランス・個人」を選ぶと一覧で分かりやすくなります。
+          </p>
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
           )}
@@ -237,7 +285,7 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
             担当者を同時に登録（任意）
           </h3>
           <p className="text-xs text-muted-foreground">
-            氏名を入力すると、この企業の連絡先として1件登録されます。
+            氏名を入力すると、この取引先の連絡先として1件登録されます。個人・フリーランスで取引先名にすでに氏名を入れている場合は、ここは空でも構いません。
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -395,6 +443,9 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
               placeholder="100-0001"
               {...register('postalCode')}
             />
+            <p className="text-xs text-muted-foreground">
+              7桁（ハイフン可）で入力すると、都道府県・市区町村・町名を自動入力します（すでに入力がある欄は上書きしません）
+            </p>
           </div>
 
           {/* 都道府県 */}

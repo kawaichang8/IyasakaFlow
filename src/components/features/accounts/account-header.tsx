@@ -149,7 +149,7 @@ export function AccountHeader({
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="flex-1">
           <SearchInput
-            placeholder="会社名、業種で検索..."
+            placeholder="取引先名、業種で検索..."
             value={localSearch}
             onChange={setLocalSearch}
             onDebouncedChange={(v) => onSearchChange(v.trim() || '')}
@@ -265,8 +265,8 @@ export function AccountHeader({
                 <SelectContent>
                   <SelectItem value="updatedAt-desc">更新日が新しい順</SelectItem>
                   <SelectItem value="updatedAt-asc">更新日が古い順</SelectItem>
-                  <SelectItem value="name-asc">会社名あいうえお順</SelectItem>
-                  <SelectItem value="name-desc">会社名逆順</SelectItem>
+                  <SelectItem value="name-asc">取引先名あいうえお順</SelectItem>
+                  <SelectItem value="name-desc">取引先名逆順</SelectItem>
                   <SelectItem value="createdAt-desc">登録日が新しい順</SelectItem>
                   <SelectItem value="createdAt-asc">登録日が古い順</SelectItem>
                 </SelectContent>

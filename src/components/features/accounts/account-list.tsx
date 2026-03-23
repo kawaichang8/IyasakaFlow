@@ -259,7 +259,7 @@ export function AccountList({ params, onPageChange }: AccountListProps) {
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">会社名</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">取引先名</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">電話</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">メール</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">Webサイト</th>
@@ -385,7 +385,7 @@ function AccountTableRow({
               id={account.id}
               field="name"
               value={account.name}
-              placeholder="会社名を入力"
+              placeholder="取引先名を入力"
               className="font-medium"
             />
             <Link

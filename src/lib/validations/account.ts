@@ -108,8 +108,8 @@ export const socialProfilesSchema = z.object({
 export const accountSchema = z.object({
   name: z
     .string()
-    .min(1, '会社名は必須です')
-    .max(200, '会社名は200文字以内で入力してください'),
+    .min(1, '取引先名は必須です')
+    .max(200, '取引先名は200文字以内で入力してください'),
   
   industry: z
     .string()

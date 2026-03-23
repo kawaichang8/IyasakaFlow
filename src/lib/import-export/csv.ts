@@ -177,7 +177,7 @@ export function parseCsv(
  */
 export const EXPORT_COLUMNS = {
   accounts: [
-    { key: 'name', header: '会社名' },
+    { key: 'name', header: '取引先名' },
     { key: 'industry', header: '業種' },
     { key: 'website', header: 'Webサイト' },
     { key: 'phone', header: '電話番号' },
