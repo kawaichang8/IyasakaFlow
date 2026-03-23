@@ -195,7 +195,9 @@ export const EXPORT_COLUMNS = {
   ] as const,
   contacts: [
     { key: 'accountName', header: '企業名' },
-    { key: 'name', header: '名前' },
+    { key: 'lastName', header: '姓' },
+    { key: 'firstName', header: '名' },
+    { key: 'name', header: '氏名（表示）' },
     { key: 'email', header: 'メール' },
     { key: 'phone', header: '電話番号' },
     { key: 'mobile', header: '携帯' },

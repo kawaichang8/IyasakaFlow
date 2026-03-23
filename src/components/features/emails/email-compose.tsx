@@ -29,6 +29,7 @@ import { useSendEmail, useSaveDraft, useEmailTemplates } from '@/hooks/use-email
 import { useAccounts } from '@/hooks/use-accounts';
 import { useContacts } from '@/hooks/use-contacts';
 import { toast } from 'sonner';
+import { getContactSalutationLastName } from '@/lib/contact-name';
 
 /**
  * カンマ区切りの文字列をメールアドレス配列に変換
@@ -91,6 +92,7 @@ export function EmailCompose({
     handleSubmit,
     setValue,
     watch,
+    getValues,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<SendEmailFormData>({
@@ -208,12 +210,22 @@ export function EmailCompose({
     }
   };
 
-  // 連絡先選択時にメールアドレスを自動入力
+  // 連絡先選択時にメールアドレスを自動入力。本文が空なら「姓 様」で挨拶のたたき台を入れる
   const handleContactChange = (contactId: string) => {
-    setValue('contactId', contactId);
+    setValue('contactId', contactId || undefined);
     const contact = contacts.find((c) => c.id === contactId);
     if (contact?.email) {
       setValue('to', contact.email);
+    }
+    if (contact && contactId) {
+      const last = getContactSalutationLastName({
+        lastName: contact.lastName,
+        name: contact.name,
+      });
+      const body = (getValues('body') as string) ?? '';
+      if (last && !body.trim()) {
+        setValue('body', `${last} 様\n\n`);
+      }
     }
   };
 
@@ -223,7 +235,7 @@ export function EmailCompose({
         <DialogHeader>
           <DialogTitle>新規メール作成</DialogTitle>
           <DialogDescription>
-            メールを作成して送信します
+            メールを作成して送信します。連絡先は姓・名で登録されていると、選択時に本文へ「〇〇 様」を入れやすくなります。
           </DialogDescription>
         </DialogHeader>
 

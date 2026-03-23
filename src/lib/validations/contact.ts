@@ -82,23 +82,23 @@ export const contactSchema = z.object({
   accountId: z
     .string()
     .min(1, '所属企業は必須です'),
-  
+
+  /** 表示・検索用。API で姓+名から自動設定（クライアント送信は任意） */
   name: z
     .string()
-    .min(1, '氏名は必須です')
-    .max(100, '氏名は100文字以内で入力してください'),
-  
-  firstName: z
-    .string()
-    .max(50, '名は50文字以内で入力してください')
+    .max(100, '氏名は100文字以内で入力してください')
     .optional()
     .nullable(),
-  
+
   lastName: z
     .string()
-    .max(50, '姓は50文字以内で入力してください')
-    .optional()
-    .nullable(),
+    .min(1, '姓は必須です')
+    .max(50, '姓は50文字以内で入力してください'),
+
+  firstName: z
+    .string()
+    .min(1, '名は必須です')
+    .max(50, '名は50文字以内で入力してください'),
   
   email: z
     .string()

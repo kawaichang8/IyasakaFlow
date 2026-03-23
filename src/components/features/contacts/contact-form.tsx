@@ -18,6 +18,7 @@ import { useAccounts, useCreateAccount } from '@/hooks/use-accounts';
 import { useQueryClient } from '@tanstack/react-query';
 import { CONTACTS_QUERY_KEY } from '@/hooks/use-contacts';
 import { toast } from 'sonner';
+import { contactNamePartsFromLegacy } from '@/lib/contact-name';
 
 interface ContactFormProps {
   initialData?: Partial<ContactFormData> & { id?: string };
@@ -35,6 +36,63 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
   const [accountSearch, setAccountSearch] = useState('');
   const [newAccountName, setNewAccountName] = useState('');
   const createAccount = useCreateAccount();
+  const defaultValues = useMemo((): ContactFormData => {
+    const parts = contactNamePartsFromLegacy(
+      initialData?.name,
+      initialData?.lastName,
+      initialData?.firstName
+    );
+    const sp = initialData?.socialProfiles;
+    return {
+      accountId: accountId || initialData?.accountId || '',
+      lastName: parts.lastName,
+      firstName: parts.firstName,
+      email: initialData?.email ?? '',
+      phone: initialData?.phone ?? '',
+      mobile: initialData?.mobile ?? '',
+      website: initialData?.website ?? '',
+      role: initialData?.role ?? '',
+      department: initialData?.department ?? '',
+      company: initialData?.company ?? '',
+      influenceLevel: (initialData?.influenceLevel as ContactFormData['influenceLevel']) ?? 'other',
+      contactSource: initialData?.contactSource,
+      status: initialData?.status ?? 'active',
+      tags: initialData?.tags ?? [],
+      notes: initialData?.notes ?? '',
+      socialProfiles: {
+        linkedin: sp?.linkedin ?? '',
+        twitter: sp?.twitter ?? '',
+        facebook: sp?.facebook ?? '',
+        threads: sp?.threads ?? '',
+        instagram: sp?.instagram ?? '',
+      },
+    };
+  }, [
+    accountId,
+    initialData?.id,
+    initialData?.accountId,
+    initialData?.name,
+    initialData?.lastName,
+    initialData?.firstName,
+    initialData?.email,
+    initialData?.phone,
+    initialData?.mobile,
+    initialData?.website,
+    initialData?.role,
+    initialData?.department,
+    initialData?.company,
+    initialData?.influenceLevel,
+    initialData?.contactSource,
+    initialData?.status,
+    initialData?.notes,
+    initialData?.tags,
+    initialData?.socialProfiles?.linkedin,
+    initialData?.socialProfiles?.twitter,
+    initialData?.socialProfiles?.facebook,
+    initialData?.socialProfiles?.threads,
+    initialData?.socialProfiles?.instagram,
+  ]);
+
   const {
     register,
     handleSubmit,
@@ -43,26 +101,7 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
     formState: { errors, isSubmitting },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
-    defaultValues: {
-      accountId: accountId || '',
-      name: '',
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      mobile: '',
-      website: '',
-      role: '',
-      department: '',
-      company: '',
-      influenceLevel: 'other',
-      contactSource: undefined,
-      status: 'active',
-      tags: [],
-      notes: '',
-      socialProfiles: { linkedin: '', twitter: '', facebook: '', threads: '', instagram: '' },
-      ...initialData,
-    },
+    defaultValues,
   });
 
   const influenceLevel = watch('influenceLevel');
@@ -202,20 +241,40 @@ export function ContactForm({ initialData, accountId, onSuccess, onCancel }: Con
           </div>
         </div>
 
-        {/* 氏名（必須） */}
-        <div className="space-y-2">
-          <Label htmlFor="name">
-            氏名 <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="name"
-            placeholder="例: 田中 太郎"
-            {...register('name')}
-          />
-          {errors.name && (
-            <p className="text-sm text-destructive">{errors.name.message}</p>
-          )}
+        {/* 姓・名（必須）— メール挨拶などで姓だけ使い分けしやすくする */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="lastName">
+              姓 <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="lastName"
+              placeholder="例: 山田"
+              autoComplete="family-name"
+              {...register('lastName')}
+            />
+            {errors.lastName && (
+              <p className="text-sm text-destructive">{errors.lastName.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="firstName">
+              名 <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="firstName"
+              placeholder="例: 太郎"
+              autoComplete="given-name"
+              {...register('firstName')}
+            />
+            {errors.firstName && (
+              <p className="text-sm text-destructive">{errors.firstName.message}</p>
+            )}
+          </div>
         </div>
+        <p className="text-xs text-muted-foreground">
+          一覧・案件では「姓 名」の順で表示されます。メール作成時は「姓」で挨拶文を入れられます。
+        </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
           {/* 役職 */}

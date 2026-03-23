@@ -34,18 +34,19 @@ import { useContacts, useDeleteContact } from '@/hooks/use-contacts';
 import { ContactForm } from './contact-form';
 import { toast } from 'sonner';
 import { CONTACT_SOURCES, type ContactFormData } from '@/lib/validations/contact';
+import { contactNamePartsFromLegacy } from '@/lib/contact-name';
 import type { Contact, QueryParams } from '@/types';
 
 /** APIの連絡先をフォームの initialData に変換 */
 function contactToFormData(contact: Contact & { account?: { id: string; name: string }; socialProfiles?: { linkedin?: string; twitter?: string; facebook?: string } }): Partial<ContactFormData> & { id: string } {
   const accountId = contact.account?.id ?? contact.accountId;
   const sp = contact.socialProfiles;
+  const parts = contactNamePartsFromLegacy(contact.name, contact.lastName, contact.firstName);
   return {
     id: contact.id,
     accountId: accountId ?? '',
-    name: contact.name,
-    firstName: contact.firstName ?? '',
-    lastName: contact.lastName ?? '',
+    lastName: parts.lastName,
+    firstName: parts.firstName,
     email: contact.email ?? '',
     phone: contact.phone ?? '',
     mobile: contact.mobile ?? '',
@@ -62,6 +63,8 @@ function contactToFormData(contact: Contact & { account?: { id: string; name: st
       linkedin: sp?.linkedin ?? '',
       twitter: sp?.twitter ?? '',
       facebook: sp?.facebook ?? '',
+      threads: sp?.threads ?? '',
+      instagram: sp?.instagram ?? '',
     },
   };
 }
@@ -159,6 +162,7 @@ export function ContactList({ params, onPageChange }: ContactListProps) {
           </DialogHeader>
           {editingContact && (
             <ContactForm
+              key={editingContact.id}
               initialData={contactToFormData(editingContact)}
               onSuccess={() => setEditingContact(null)}
               onCancel={() => setEditingContact(null)}
@@ -172,7 +176,7 @@ export function ContactList({ params, onPageChange }: ContactListProps) {
           <table className="w-full">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left text-sm font-medium">名前</th>
+                <th className="px-4 py-3 text-left text-sm font-medium">氏名</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium md:table-cell">会社</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium lg:table-cell">役職</th>
                 <th className="hidden px-4 py-3 text-left text-sm font-medium sm:table-cell">影響力</th>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,8 @@ interface AccountFormProps {
 
 /** 新規作成時に同時登録する連絡先の入力値 */
 interface CreateWithContactFields {
-  contactName: string;
+  contactLastName: string;
+  contactFirstName: string;
   contactEmail: string;
   contactPhone: string;
   contactRole: string;
@@ -43,11 +44,15 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
   const queryClient = useQueryClient();
   const isCreate = !initialData?.id;
   const [createContact, setCreateContact] = useState<CreateWithContactFields>({
-    contactName: '',
+    contactLastName: '',
+    contactFirstName: '',
     contactEmail: '',
     contactPhone: '',
     contactRole: '',
   });
+  /** 取引先名が既存と重複している件数（インライン表示用） */
+  const [nameDuplicateCount, setNameDuplicateCount] = useState<number | null>(null);
+  const duplicateToastKeyRef = useRef<string | null>(null);
 
   const {
     register,
@@ -84,6 +89,61 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
   const accountType = watch('accountType');
   const postalCodeW = watch('postalCode');
   const countryW = watch('country');
+  const nameW = watch('name');
+
+  /** 取引先名の重複を検知してトースト・インラインで通知 */
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const name = (getValues('name') ?? '').trim();
+      if (name.length < 1) {
+        if (!cancelled) {
+          setNameDuplicateCount(null);
+          duplicateToastKeyRef.current = null;
+        }
+        return;
+      }
+
+      const params = new URLSearchParams({ name });
+      if (initialData?.id) params.set('excludeId', initialData.id);
+
+      try {
+        const res = await fetch(`/api/accounts/check-duplicate?${params.toString()}`);
+        if (cancelled) return;
+        const data = (await res.json()) as {
+          duplicate?: boolean;
+          matches?: { id: string; name: string }[];
+          error?: string;
+        };
+        const currentName = (getValues('name') ?? '').trim();
+        if (currentName !== name) return;
+
+        if (res.ok && data.duplicate && data.matches && data.matches.length > 0) {
+          const n = data.matches.length;
+          setNameDuplicateCount(n);
+          const key = `${name}|${initialData?.id ?? 'new'}`;
+          if (duplicateToastKeyRef.current !== key) {
+            duplicateToastKeyRef.current = key;
+            toast.warning('同じ取引先名のデータが既にあります', {
+              description: `既存 ${n} 件と名前が重複しています。別名にするか、意図した重複か確認してください。`,
+            });
+          }
+        } else {
+          setNameDuplicateCount(null);
+          duplicateToastKeyRef.current = null;
+        }
+      } catch {
+        if (!cancelled) {
+          setNameDuplicateCount(null);
+        }
+      }
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [nameW, initialData?.id, getValues]);
 
   /** 日本の郵便番号7桁で zipcloud から住所を補完（空欄の項目のみ） */
   useEffect(() => {
@@ -137,14 +197,20 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
 
       const newAccountId = result.data?.id;
 
-      // 新規作成かつ担当者名が入力されていれば連絡先を同時作成
-      if (isCreate && newAccountId && createContact.contactName.trim()) {
+      // 新規作成かつ姓・名が入力されていれば連絡先を同時作成
+      if (
+        isCreate &&
+        newAccountId &&
+        createContact.contactLastName.trim() &&
+        createContact.contactFirstName.trim()
+      ) {
         const contactRes = await fetch('/api/contacts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             accountId: newAccountId,
-            name: createContact.contactName.trim(),
+            lastName: createContact.contactLastName.trim(),
+            firstName: createContact.contactFirstName.trim(),
             email: createContact.contactEmail.trim() || null,
             phone: createContact.contactPhone.trim() || null,
             role: createContact.contactRole.trim() || null,
@@ -207,6 +273,14 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
           <p className="text-xs text-muted-foreground">
             法人は会社名を入力。フリーランス・個人の方は氏名や屋号を入力してください。種別で「フリーランス・個人」を選ぶと一覧で分かりやすくなります。
           </p>
+          {nameDuplicateCount != null && nameDuplicateCount > 0 && (
+            <p
+              className="text-sm font-medium text-amber-800 dark:text-amber-200"
+              role="status"
+            >
+              同じ取引先名が {nameDuplicateCount} 件すでに登録されています。別の表示名にするか、重複で問題ないか確認してください。
+            </p>
+          )}
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
           )}
@@ -285,16 +359,25 @@ export function AccountForm({ initialData, onSuccess, onSaveAndNext, onCancel }:
             担当者を同時に登録（任意）
           </h3>
           <p className="text-xs text-muted-foreground">
-            氏名を入力すると、この取引先の連絡先として1件登録されます。個人・フリーランスで取引先名にすでに氏名を入れている場合は、ここは空でも構いません。
+            姓・名を入力すると、この取引先の連絡先として1件登録されます。個人・フリーランスで取引先名にすでに氏名を入れている場合は、ここは空でも構いません。
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="createContactName">担当者名</Label>
+              <Label htmlFor="createContactLastName">担当者の姓</Label>
               <Input
-                id="createContactName"
-                placeholder="例: 山田 太郎"
-                value={createContact.contactName}
-                onChange={(e) => setCreateContact((c) => ({ ...c, contactName: e.target.value }))}
+                id="createContactLastName"
+                placeholder="例: 山田"
+                value={createContact.contactLastName}
+                onChange={(e) => setCreateContact((c) => ({ ...c, contactLastName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="createContactFirstName">担当者の名</Label>
+              <Input
+                id="createContactFirstName"
+                placeholder="例: 太郎"
+                value={createContact.contactFirstName}
+                onChange={(e) => setCreateContact((c) => ({ ...c, contactFirstName: e.target.value }))}
               />
             </div>
             <div className="space-y-2">

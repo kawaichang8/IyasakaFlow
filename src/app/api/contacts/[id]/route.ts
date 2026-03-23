@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contactSchema } from '@/lib/validations/contact';
+import { buildContactFullName } from '@/lib/contact-name';
 
 interface RouteParams {
   params: {
@@ -205,9 +206,26 @@ export async function PATCH(
     // 更新データを構築
     const updateData: any = {};
     
-    if (validatedData.name !== undefined) updateData.name = validatedData.name;
-    if (validatedData.firstName !== undefined) updateData.firstName = validatedData.firstName || null;
-    if (validatedData.lastName !== undefined) updateData.lastName = validatedData.lastName || null;
+    if (validatedData.firstName !== undefined) updateData.firstName = validatedData.firstName?.trim() || null;
+    if (validatedData.lastName !== undefined) updateData.lastName = validatedData.lastName?.trim() || null;
+
+    const mergedLast =
+      validatedData.lastName !== undefined
+        ? validatedData.lastName?.trim() ?? ''
+        : (existingContact.lastName ?? '');
+    const mergedFirst =
+      validatedData.firstName !== undefined
+        ? validatedData.firstName?.trim() ?? ''
+        : (existingContact.firstName ?? '');
+
+    if (validatedData.lastName !== undefined || validatedData.firstName !== undefined) {
+      if (mergedLast && mergedFirst) {
+        updateData.name = buildContactFullName(mergedLast, mergedFirst);
+      }
+    }
+    if (validatedData.name !== undefined && validatedData.lastName === undefined && validatedData.firstName === undefined) {
+      updateData.name = validatedData.name;
+    }
     if (validatedData.email !== undefined) updateData.email = validatedData.email || null;
     if (validatedData.phone !== undefined) updateData.phone = validatedData.phone || null;
     if (validatedData.mobile !== undefined) updateData.mobile = validatedData.mobile || null;

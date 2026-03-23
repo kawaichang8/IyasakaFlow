@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contactSchema } from '@/lib/validations/contact';
+import { buildContactFullName } from '@/lib/contact-name';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { account: { name: { contains: search, mode: 'insensitive' } } },
       ];
@@ -192,6 +195,7 @@ export async function POST(request: NextRequest) {
     
     // バリデーション
     const validatedData = contactSchema.parse(body);
+    const displayName = buildContactFullName(validatedData.lastName, validatedData.firstName);
     
     // アカウントの存在確認
     const account = await prisma.account.findUnique({
@@ -223,9 +227,9 @@ export async function POST(request: NextRequest) {
     // 連絡先を作成
     const newContact = await prisma.contact.create({
       data: {
-        name: validatedData.name,
-        firstName: validatedData.firstName || null,
-        lastName: validatedData.lastName || null,
+        name: displayName,
+        firstName: validatedData.firstName.trim() || null,
+        lastName: validatedData.lastName.trim() || null,
         email: validatedData.email || null,
         phone: validatedData.phone || null,
         mobile: validatedData.mobile || null,

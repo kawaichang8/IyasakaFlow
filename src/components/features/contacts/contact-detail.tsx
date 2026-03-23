@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
+import { contactNamePartsFromLegacy } from '@/lib/contact-name';
 import { CONTACT_SOURCES } from '@/lib/validations/contact';
 import { useContact } from '@/hooks/use-contacts';
 import { ContactForm } from './contact-form';
@@ -91,6 +92,11 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{contact.name}</h1>
+            {(contact.lastName || contact.firstName) && (
+              <p className="text-sm text-muted-foreground">
+                姓: {contact.lastName ?? '—'} ／ 名: {contact.firstName ?? '—'}
+              </p>
+            )}
             <p className="text-muted-foreground">
               {[contact.role, contact.department].filter(Boolean).join(' - ') || '—'}
             </p>
@@ -127,6 +133,7 @@ export function ContactDetail({ contactId }: ContactDetailProps) {
             <DialogDescription>担当者情報を変更できます</DialogDescription>
           </DialogHeader>
           <ContactForm
+            key={contact.id}
             initialData={contactToFormData(contact)}
             onSuccess={() => setEditing(false)}
             onCancel={() => setEditing(false)}
@@ -451,12 +458,12 @@ function getInteractionTypeLabel(type: string): string {
 function contactToFormData(c: ContactWithRelations): Partial<ContactFormData> & { id: string } {
   const accountId = c.account?.id ?? c.accountId;
   const sp = c.socialProfiles as { linkedin?: string; twitter?: string; facebook?: string; threads?: string; instagram?: string } | undefined;
+  const parts = contactNamePartsFromLegacy(c.name, c.lastName, c.firstName);
   return {
     id: c.id,
     accountId: accountId ?? '',
-    name: c.name,
-    firstName: c.firstName ?? '',
-    lastName: c.lastName ?? '',
+    lastName: parts.lastName,
+    firstName: parts.firstName,
     email: c.email ?? '',
     phone: c.phone ?? '',
     mobile: c.mobile ?? '',
@@ -473,6 +480,8 @@ function contactToFormData(c: ContactWithRelations): Partial<ContactFormData> & 
       linkedin: sp?.linkedin ?? '',
       twitter: sp?.twitter ?? '',
       facebook: sp?.facebook ?? '',
+      threads: sp?.threads ?? '',
+      instagram: sp?.instagram ?? '',
     },
   };
 }

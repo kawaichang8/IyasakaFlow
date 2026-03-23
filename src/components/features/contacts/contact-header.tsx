@@ -157,7 +157,7 @@ export function ContactHeader({
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="flex-1">
           <SearchInput
-            placeholder="名前、メール、会社名で検索..."
+            placeholder="姓、名、メール、会社名で検索..."
             value={localSearch}
             onChange={setLocalSearch}
             onDebouncedChange={(v) => onSearchChange(v.trim() || '')}

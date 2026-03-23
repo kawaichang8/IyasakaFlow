@@ -161,7 +161,7 @@ async function main() {
       update: {},
       create: {
         id: 'con_tanaka',
-        name: '田中太郎',
+        name: '田中 太郎',
         firstName: '太郎',
         lastName: '田中',
         email: 'tanaka@abc-corp.example.com',
@@ -184,7 +184,7 @@ async function main() {
       update: {},
       create: {
         id: 'con_suzuki',
-        name: '鈴木花子',
+        name: '鈴木 花子',
         firstName: '花子',
         lastName: '鈴木',
         email: 'suzuki@abc-corp.example.com',
@@ -206,7 +206,7 @@ async function main() {
       update: {},
       create: {
         id: 'con_sato',
-        name: '佐藤健一',
+        name: '佐藤 健一',
         firstName: '健一',
         lastName: '佐藤',
         email: 'sato@abc-corp.example.com',
@@ -226,7 +226,7 @@ async function main() {
       update: {},
       create: {
         id: 'con_yamada',
-        name: '山田一郎',
+        name: '山田 一郎',
         firstName: '一郎',
         lastName: '山田',
         email: 'yamada@xyz-mfg.example.com',
@@ -249,7 +249,7 @@ async function main() {
       update: {},
       create: {
         id: 'con_takahashi',
-        name: '高橋次郎',
+        name: '高橋 次郎',
         firstName: '次郎',
         lastName: '高橋',
         email: 'takahashi@def-trading.example.com',

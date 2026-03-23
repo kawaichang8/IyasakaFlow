@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { parseCsv, EXPORT_COLUMNS } from '@/lib/import-export/csv';
 import { accountSchema } from '@/lib/validations/account';
 import { contactSchema } from '@/lib/validations/contact';
+import { buildContactFullName, contactNamePartsFromLegacy } from '@/lib/contact-name';
 import { dealSchema } from '@/lib/validations/deal';
 
 const MAX_IMPORT = 2000;
@@ -223,11 +224,19 @@ export async function POST(request: NextRequest) {
         const accountName = toStr(
           row['企業名'] ?? row['会社名'] ?? row['企業'] ?? row['会社'] ?? row['組織名'] ?? row['組織'] ?? row['取引先'] ?? row['Company'] ?? row['company']
         );
-        const name = toStr(
+        const legacyFullName = toStr(
           row['名前'] ?? row['氏名'] ?? row['担当者名'] ?? row['連絡先名'] ?? row['担当者'] ?? row['連絡先'] ?? row['宛名'] ?? row['Name'] ?? row['name'] ?? row['Contact'] ?? row['contact']
         );
-        if (!accountName || !name) {
-          const baseMsg = '企業名（または会社名）と名前（または氏名・担当者名・宛名）は必須です。CSVの1行目に「企業名」「名前」または「会社名」「氏名」「宛名」などの列があるか確認してください。';
+        let lastName = toStr(row['姓']);
+        let firstName = toStr(row['名']);
+        if ((!lastName || !firstName) && legacyFullName) {
+          const p = contactNamePartsFromLegacy(legacyFullName, null, null);
+          if (!lastName) lastName = p.lastName;
+          if (!firstName) firstName = p.firstName;
+        }
+        if (!accountName || !lastName || !firstName) {
+          const baseMsg =
+            '企業名（または会社名）と、姓・名が必須です。「姓」「名」列を用意するか、「名前」列にスペースで区切って「姓 名」と入力してください。';
           const isFirstRequiredError = !results.errors.some((e) => e.message.includes('必須です'));
           const hint = isFirstRequiredError && contactHeaderRow.length > 0
             ? ` 検出した1行目の列: [${contactHeaderRow.join(', ')}]`
@@ -259,9 +268,8 @@ export async function POST(request: NextRequest) {
           const notes = extraParts.length ? (baseNotes ? `${baseNotes}\n${extraParts.join('\n')}` : extraParts.join('\n')) : baseNotes || undefined;
           const data = {
             accountId: account.id,
-            name,
-            firstName: toStr(row['名']) || undefined,
-            lastName: toStr(row['姓']) || undefined,
+            lastName,
+            firstName,
             email: toStr(row['メール'] ?? row['メールアドレス'] ?? row['Email'] ?? row['email']) || undefined,
             phone: toStr(row['電話番号'] ?? row['電話'] ?? row['Phone'] ?? row['phone']) || undefined,
             mobile: toStr(row['携帯']) || undefined,
@@ -272,12 +280,27 @@ export async function POST(request: NextRequest) {
             notes: notes || undefined,
             tags: toStr(row['タグ']).split(/[;,]/).map((s) => s.trim()).filter(Boolean),
           };
-          contactSchema.parse(data);
+          const validated = contactSchema.parse(data);
+          const displayName = buildContactFullName(validated.lastName, validated.firstName);
           await prisma.contact.create({
             data: {
-              ...data,
-              influenceLevel: data.influenceLevel.toUpperCase() as any,
-              status: data.status.toUpperCase() as any,
+              accountId: validated.accountId,
+              name: displayName,
+              lastName: validated.lastName.trim() || null,
+              firstName: validated.firstName.trim() || null,
+              email: validated.email ?? null,
+              phone: validated.phone ?? null,
+              mobile: validated.mobile ?? null,
+              role: validated.role ?? null,
+              department: validated.department ?? null,
+              influenceLevel: validated.influenceLevel.toUpperCase() as any,
+              contactSource: validated.contactSource ?? null,
+              status: validated.status.toUpperCase() as any,
+              notes: validated.notes ?? null,
+              tags: validated.tags ?? [],
+              socialProfiles: validated.socialProfiles ?? {},
+              customFields: validated.customFields ?? {},
+              ownerId: validated.ownerId ?? null,
             },
           });
           results.created++;
